@@ -20,7 +20,7 @@ import {
 
 interface TutorialGuideViewProps {
   onNavigateTab: (
-    tab: "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop"
+    tab: "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop" | "meta"
   ) => void;
   onOpenCreateModal: () => void;
 }

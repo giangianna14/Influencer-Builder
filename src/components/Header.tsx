@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Plus, Download, Radio, UserCheck, Bot, ShieldCheck, BookOpen } from "lucide-react";
+import { Sparkles, Plus, Download, Radio, UserCheck, Bot, ShieldCheck, BookOpen, Share2 } from "lucide-react";
 import { AIInfluencer } from "../types";
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
   onOpenCreateModal: () => void;
   onExportDossier: () => void;
   onOpenGuide?: () => void;
+  onOpenSocialMeta?: () => void;
   isTrendsLoading?: boolean;
 }
 
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateModal,
   onExportDossier,
   onOpenGuide,
+  onOpenSocialMeta,
   isTrendsLoading = false,
 }) => {
   return (
@@ -98,6 +100,19 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <BookOpen className="h-3.5 w-3.5 text-indigo-400" />
               <span>Panduan</span>
+            </button>
+          )}
+
+          {/* Social Meta Preview Button */}
+          {onOpenSocialMeta && (
+            <button
+              id="btn-open-social-meta-header"
+              onClick={onOpenSocialMeta}
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-semibold text-purple-300 transition-colors hover:bg-purple-500/20 hover:text-white"
+              title="Pratinjau Tampilan Medsos dan Injeksi Open Graph Meta Tags"
+            >
+              <Share2 className="h-3.5 w-3.5 text-purple-400" />
+              <span>Meta Medsos</span>
             </button>
           )}
 

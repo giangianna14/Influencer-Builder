@@ -184,3 +184,15 @@ export interface CharacterCreationData {
   catatanTambahan?: string;
   toneTier?: "tier1" | "tier2" | "tier3";
 }
+
+export interface SocialMetaConfig {
+  title: string;
+  description: string;
+  imageUrl: string;
+  pageUrl: string;
+  siteName: string;
+  cardType: "summary_large_image" | "summary";
+  creatorHandle: string;
+  locale: string;
+  type: "profile" | "website" | "article";
+}

@@ -8,6 +8,7 @@ import { InfluencerBuilderModal } from "./components/InfluencerBuilderModal";
 import { CharacterStudioForm } from "./components/CharacterStudioForm";
 import { AntiSlopStudio } from "./components/AntiSlopStudio";
 import { TutorialGuideView } from "./components/TutorialGuideView";
+import { SocialMetaPreview } from "./components/SocialMetaPreview";
 import { defaultInfluencers, initialRealtimeTrends } from "./data/defaultInfluencers";
 import {
   AIInfluencer,
@@ -16,6 +17,10 @@ import {
   BuilderFormState,
   CharacterCreationData,
 } from "./types";
+import {
+  injectOpenGraphMetaTags,
+  buildDefaultSocialMeta,
+} from "./utils/metaTags";
 import {
   Sparkles,
   Layers,
@@ -30,6 +35,7 @@ import {
   Wand2,
   ShieldCheck,
   BookOpen,
+  Share2,
 } from "lucide-react";
 
 export default function App() {
@@ -97,7 +103,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
 
   // UI state
   const [activeTab, setActiveTab] = useState<
-    "guide" | "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop"
+    "guide" | "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop" | "meta"
   >("identity");
   const [isBuilderModalOpen, setIsBuilderModalOpen] = useState(false);
   const [isBuildingInfluencer, setIsBuildingInfluencer] = useState(false);
@@ -122,6 +128,18 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
       console.error(e);
     }
   }, [trends]);
+
+  // Dynamically sync Open Graph & Twitter meta tags to document.head whenever active influencer changes
+  useEffect(() => {
+    try {
+      if (activeInfluencer) {
+        const config = buildDefaultSocialMeta(activeInfluencer);
+        injectOpenGraphMetaTags(config);
+      }
+    } catch (err) {
+      console.error("Failed to dynamically update Open Graph meta tags:", err);
+    }
+  }, [activeInfluencer]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -332,6 +350,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         onOpenCreateModal={() => setIsBuilderModalOpen(true)}
         onExportDossier={handleExportDossier}
         onOpenGuide={() => setActiveTab("guide")}
+        onOpenSocialMeta={() => setActiveTab("meta")}
         isTrendsLoading={isDiscoveringTrends}
       />
 
@@ -444,6 +463,22 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
                 Poles
               </span>
             </button>
+
+            <button
+              id="tab-meta"
+              onClick={() => setActiveTab("meta")}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === "meta"
+                  ? "bg-purple-900/70 text-purple-100 shadow-sm border border-purple-400"
+                  : "text-zinc-400 hover:text-purple-300 hover:bg-purple-950/30"
+              }`}
+            >
+              <Share2 className="h-4 w-4 text-purple-400" />
+              <span>Pratinjau Medsos & Meta</span>
+              <span className="rounded-full bg-purple-500/20 px-1.5 py-0.2 text-[10px] text-purple-300 font-bold">
+                OG Tag
+              </span>
+            </button>
           </div>
 
           <div className="hidden items-center gap-2 text-xs text-zinc-400 lg:flex">
@@ -467,6 +502,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
               influencer={activeInfluencer}
               onGenerateAvatar={handleGenerateAvatar}
               isGeneratingAvatar={isGeneratingAvatar}
+              onOpenSocialMeta={() => setActiveTab("meta")}
             />
             {/* Quick Next Jump */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4">
@@ -520,6 +556,10 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         )}
 
         {activeTab === "antislop" && <AntiSlopStudio />}
+
+        {activeTab === "meta" && (
+          <SocialMetaPreview influencer={activeInfluencer} />
+        )}
 
         {activeTab === "guide" && (
           <TutorialGuideView
