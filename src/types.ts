@@ -84,6 +84,7 @@ export interface AIInfluencer {
   visualIdentity: VisualIdentity;
   personalityProfile: PersonalityProfile;
   promptPackages: PromptPackages;
+  toneTier?: "tier1" | "tier2" | "tier3";
   createdAt?: string;
 }
 
@@ -113,6 +114,7 @@ export interface AutomatedContentPost {
   hashtags: string[];
   soundtrack: string;
   predictedEngagement: string;
+  toneTier?: "tier1" | "tier2" | "tier3";
   generatedPreviewImage?: string;
 }
 
@@ -124,6 +126,7 @@ export interface BuilderFormState {
   aesthetic: string;
   targetMarket: string;
   language: string;
+  toneTier?: "tier1" | "tier2" | "tier3";
 }
 
 export interface CharacterCreationData {
@@ -179,4 +182,5 @@ export interface CharacterCreationData {
   // 10. Tujuan AI Influencer
   tujuanAI: string;
   catatanTambahan?: string;
+  toneTier?: "tier1" | "tier2" | "tier3";
 }

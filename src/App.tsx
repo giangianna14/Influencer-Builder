@@ -6,6 +6,8 @@ import { PromptPackagesSection } from "./components/PromptPackagesSection";
 import { RealtimeTrendsAndAutomation } from "./components/RealtimeTrendsAndAutomation";
 import { InfluencerBuilderModal } from "./components/InfluencerBuilderModal";
 import { CharacterStudioForm } from "./components/CharacterStudioForm";
+import { AntiSlopStudio } from "./components/AntiSlopStudio";
+import { TutorialGuideView } from "./components/TutorialGuideView";
 import { defaultInfluencers, initialRealtimeTrends } from "./data/defaultInfluencers";
 import {
   AIInfluencer,
@@ -26,6 +28,8 @@ import {
   Zap,
   Sliders,
   Wand2,
+  ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 
 export default function App() {
@@ -74,7 +78,7 @@ export default function App() {
         readyVisualPrompt:
           "Cinematic photorealistic 8k video still of 23yo Indonesian woman Maya Danastri standing in minimalist concrete room, dynamic clothing transition effect, wearing iridescent white tailored cyber blazer, Rembrandt studio lighting, 35mm f/1.8 lens, raw photography",
         recommendedGenerator: "Flux",
-        caption: `Dalam dunia serba cepat, pakaian bukan cuma pelindung tubuh—tapi kanvas ekspresi digital kita. Hari ini aku memadukan tenun lokal dengan siluet cybernetic 3D. 
+        caption: `Pakaian hari ini lebih dari sekadar pelindung fisik, melainkan kanvas ekspresi kita. Hari ini aku memadukan tenun lokal dengan siluet cybernetic 3D. 
 
 Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhnya oleh digital augmented fashion? Let me know your thoughts di kolom komentar! 👇✨`,
         callToAction: "Komen 'CYBER' kalau kamu mau breakdown prompt styling 3D ini di DM kamu!",
@@ -93,7 +97,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
 
   // UI state
   const [activeTab, setActiveTab] = useState<
-    "identity" | "personality" | "prompts" | "trends" | "studio"
+    "guide" | "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop"
   >("identity");
   const [isBuilderModalOpen, setIsBuilderModalOpen] = useState(false);
   const [isBuildingInfluencer, setIsBuildingInfluencer] = useState(false);
@@ -194,6 +198,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
           influencer: activeInfluencer,
           selectedTrend: trend,
           count: 3,
+          toneTier: activeInfluencer.toneTier || "tier2",
         }),
       });
       const data = await res.json();
@@ -326,6 +331,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         onSelectInfluencer={(inf) => setActiveInfluencer(inf)}
         onOpenCreateModal={() => setIsBuilderModalOpen(true)}
         onExportDossier={handleExportDossier}
+        onOpenGuide={() => setActiveTab("guide")}
         isTrendsLoading={isDiscoveringTrends}
       />
 
@@ -335,12 +341,28 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
           <div className="flex flex-wrap gap-2">
             <button
+              id="tab-guide"
+              onClick={() => setActiveTab("guide")}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all ${
+                activeTab === "guide"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-950/40 border border-indigo-400"
+                  : "bg-indigo-950/40 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-900/60 hover:text-white"
+              }`}
+            >
+              <BookOpen className="h-4 w-4 text-indigo-400" />
+              <span>Buku Panduan Pemula</span>
+              <span className="rounded-full bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 text-[10px] font-bold">
+                Tutorial
+              </span>
+            </button>
+
+            <button
               id="tab-studio"
               onClick={() => setActiveTab("studio")}
               className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all ${
                 activeTab === "studio"
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-950/40 border border-indigo-400"
-                  : "bg-indigo-950/30 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-900/50 hover:text-white"
+                  : "bg-zinc-900/80 text-zinc-300 border border-zinc-700 hover:bg-zinc-800 hover:text-white"
               }`}
             >
               <Wand2 className="h-4 w-4" />
@@ -405,6 +427,22 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
                   {automatedPosts.length}
                 </span>
               )}
+            </button>
+
+            <button
+              id="tab-antislop"
+              onClick={() => setActiveTab("antislop")}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === "antislop"
+                  ? "bg-purple-950/80 text-purple-200 shadow-sm border border-purple-500/50"
+                  : "text-zinc-400 hover:text-purple-300 hover:bg-purple-950/30"
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4 text-purple-400" />
+              <span>Studio Anti-Slop v3.0</span>
+              <span className="rounded-full bg-purple-500/20 px-1.5 py-0.2 text-[10px] text-purple-300 font-bold">
+                Poles
+              </span>
             </button>
           </div>
 
@@ -478,6 +516,15 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
             onAutomateContent={handleAutomateContent}
             isAutomatingContent={isAutomatingContent}
             automatedPosts={automatedPosts}
+          />
+        )}
+
+        {activeTab === "antislop" && <AntiSlopStudio />}
+
+        {activeTab === "guide" && (
+          <TutorialGuideView
+            onNavigateTab={(tab) => setActiveTab(tab)}
+            onOpenCreateModal={() => setIsBuilderModalOpen(true)}
           />
         )}
       </main>

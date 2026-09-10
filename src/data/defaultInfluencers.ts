@@ -284,7 +284,7 @@ export const initialRealtimeTrends: RealtimeTrend[] = [
     niche: "Sustainable Lifestyle",
     momentum: "High",
     summary: "Audiens muda jenuh dengan konsumerisme berlebih dan mencari panduan merancang 10 pakaian esensial tahan lama untuk 365 hari.",
-    viralAngle: "Carousel edukasi interaktif: '10 Items, 30 Looks — AI Influencer Capsule Wardrobe Matrix'.",
+    viralAngle: "Carousel edukasi interaktif: '10 Items, 30 Looks: AI Influencer Capsule Wardrobe Matrix'.",
     trendingHashtags: ["#CapsuleWardrobe", "#QuietLuxury", "#SustainableLiving", "#MindfulFashion"],
     audioSuggestion: "Warm acoustic guitar fingerpicking dengan ambient cafe murmur",
     sourceGrounding: "Pinterest Global Trend Index & Gen Z Consumer Report",

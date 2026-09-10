@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Plus, Download, Radio, UserCheck, Bot } from "lucide-react";
+import { Sparkles, Plus, Download, Radio, UserCheck, Bot, ShieldCheck, BookOpen } from "lucide-react";
 import { AIInfluencer } from "../types";
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   onSelectInfluencer: (influencer: AIInfluencer) => void;
   onOpenCreateModal: () => void;
   onExportDossier: () => void;
+  onOpenGuide?: () => void;
   isTrendsLoading?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectInfluencer,
   onOpenCreateModal,
   onExportDossier,
+  onOpenGuide,
   isTrendsLoading = false,
 }) => {
   return (
@@ -71,11 +73,33 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
+          {/* Anti-Slop Writing v3.0 Status Badge */}
+          <div
+            className="hidden items-center gap-1.5 rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-xs font-medium text-purple-300 lg:flex"
+            title="Anti-Slop Writing v3.0 Aktif: Nol Em-Dash, Nol Klise AI, Cadence Variatif"
+          >
+            <ShieldCheck className="h-3 w-3 text-purple-400" />
+            <span>Anti-Slop v3.0: Aktif</span>
+          </div>
+
           {/* Real-time Status Badge */}
           <div className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 md:flex">
             <Radio className={`h-3 w-3 ${isTrendsLoading ? "animate-spin text-amber-400" : "animate-pulse text-emerald-400"}`} />
             <span>{isTrendsLoading ? "Scanning Web..." : "Trend Radar Live"}</span>
           </div>
+
+          {/* Panduan Pemula Button */}
+          {onOpenGuide && (
+            <button
+              id="btn-open-guide-header"
+              onClick={onOpenGuide}
+              className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-300 transition-colors hover:bg-indigo-500/20 hover:text-white"
+              title="Lihat Panduan Langkah demi Langkah"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Panduan</span>
+            </button>
+          )}
 
           {/* Export Button */}
           <button

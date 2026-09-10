@@ -46,6 +46,211 @@ function extractJSON(text: string): any {
   return JSON.parse(clean);
 }
 
+// Anti-Slop Writing Engine v3.0 Core Directives & Sanitizers (based on adenaufal/anti-slop-writing)
+const ANTI_SLOP_DIRECTIVES = `
+[KEBIJAKAN ANTI-SLOP WRITING v3.0 - WAJIB DIPATUHI SECARA KETAT]
+1. KEBIJAKAN TANDA BACA (ATURAN MUTLAK):
+   - Em dash ('—') dan en dash ('–') DILARANG TOTAL. Target: NOL DASH. Ganti dengan titik, koma, atau tanda kurung.
+   - Jangan gunakan colon (:) bertumpuk-tumpuk.
+2. LARANGAN KOSAKATA SLOP AI:
+   - Dilarang kata analitis klise: "menyelami", "menyoroti", "menggarisbawahi", "memfasilitasi", "mengoptimalkan", "mengedepankan", "mewujudkan", "merealisasikan", "berperan penting", "berperan krusial", "memastikan bahwa", "memastikan".
+   - Dilarang kata penggelembung puffery: "sangat penting", "sangat krusial", "fundamental", "luar biasa", "holistik", "komprehensif", "inovatif", "dinamis".
+   - Dilarang figuratif hampa: "tapestry", "permadani", "ekosistem", "paradigma", "transformasi digital", "sinergi", "lanskap".
+   - Dilarang pembuka klise: "Di era modern ini", "Seiring perkembangan zaman", "Dalam konteks", "Sebagai kesimpulan", "Tidak dapat dipungkiri".
+3. POLA STRUKTURAL & BURSTINESS:
+   - Cadence uniformity adalah musuh. Variasikan panjang kalimat secara dinamis (campurkan kalimat pendek 3-5 kata dengan kalimat panjang 20+ kata).
+   - Jangan gunakan formula retoris: "tidak hanya X tetapi juga Y" atau "bukan hanya X tapi juga Y". Nyatakan faktanya langsung.
+   - Pecah aturan tiga (AI selalu mendaftar tepat 3 hal; gunakan variasi 2 atau 4 hal).
+   - Variasikan ritme pembuka kalimat (jangan mulai banyak kalimat berturut-turut dengan "Hal ini", "Ini", "Dalam", "Selain itu", atau "Dengan").
+`;
+
+const BANNED_SLOP_WORDS_ID = [
+  "sangat krusial",
+  "sangat penting",
+  "sangat signifikan",
+  "sangat relevan",
+  "fundamental",
+  "luar biasa",
+  "menyelami",
+  "menyoroti",
+  "menggarisbawahi",
+  "memfasilitasi",
+  "mengoptimalkan",
+  "mengedepankan",
+  "mewujudkan",
+  "merealisasikan",
+  "berperan penting",
+  "berperan krusial",
+  "berperan dalam membentuk",
+  "memastikan bahwa",
+  "memastikan",
+  "tapestry",
+  "permadani",
+  "ekosistem",
+  "paradigma",
+  "transformasi digital",
+  "sinergi",
+  "lanskap",
+  "holistik",
+  "komprehensif",
+  "di era modern ini",
+  "seiring perkembangan zaman",
+  "dalam konteks ini",
+  "perlu diketahui bahwa",
+  "penting untuk diingat",
+  "sebagai kesimpulan",
+  "dapat disimpulkan bahwa",
+  "pada akhirnya,",
+  "tidak dapat dipungkiri",
+];
+
+function sanitizeAntiSlopText(text: string, tier: "tier1" | "tier2" | "tier3" = "tier2"): string {
+  if (!text || typeof text !== "string") return text;
+  let cleaned = text;
+
+  // 1. DILARANG TOTAL: Em-dash & En-dash
+  cleaned = cleaned.replace(/\s*—\s*/g, ", ");
+  cleaned = cleaned.replace(/\s*–\s*/g, ", ");
+
+  // 2. Bersihkan pembuka klise AI
+  cleaned = cleaned.replace(/Di era modern ini,?\s*/gi, "");
+  cleaned = cleaned.replace(/Seiring perkembangan zaman,?\s*/gi, "");
+  cleaned = cleaned.replace(/Perlu diketahui bahwa\s*/gi, "");
+  cleaned = cleaned.replace(/Penting untuk diingat bahwa\s*/gi, "Ingat: ");
+  cleaned = cleaned.replace(/Sebagai kesimpulan,?\s*/gi, "Kesimpulannya, ");
+  cleaned = cleaned.replace(/Dengan demikian, dapat disimpulkan bahwa\s*/gi, "Jadi, ");
+  cleaned = cleaned.replace(/Dapat disimpulkan bahwa\s*/gi, "Intinya, ");
+  cleaned = cleaned.replace(/Tidak dapat dipungkiri bahwa\s*/gi, "Jelas bahwa ");
+
+  // 3. Matikan parallelisme formulaik
+  cleaned = cleaned.replace(/tidak hanya (.*?),? tetapi juga/gi, "$1, serta");
+  cleaned = cleaned.replace(/bukan hanya (.*?),? melainkan juga/gi, "$1, ditambah");
+  cleaned = cleaned.replace(/bukan hanya (.*?),? tapi juga/gi, "$1, dan");
+  cleaned = cleaned.replace(/tantangan dan peluang/gi, "masalah serta potensi");
+
+  // 4. Penggantian kata klise
+  cleaned = cleaned.replace(/sangat krusial/gi, "penting");
+  cleaned = cleaned.replace(/sangat signifikan/gi, "berarti");
+  cleaned = cleaned.replace(/menyelami/gi, "mempelajari");
+  cleaned = cleaned.replace(/memfasilitasi/gi, "membantu");
+  cleaned = cleaned.replace(/mengoptimalkan/gi, "memaksimalkan");
+  cleaned = cleaned.replace(/berperan penting dalam/gi, "membantu");
+  cleaned = cleaned.replace(/berperan krusial dalam/gi, "mendukung");
+  cleaned = cleaned.replace(/memastikan bahwa/gi, "menjaga agar");
+  cleaned = cleaned.replace(/memastikan/gi, "menjaga");
+  cleaned = cleaned.replace(/transformasi digital/gi, "kemajuan digital");
+  cleaned = cleaned.replace(/paradigma baru/gi, "sudut pandang baru");
+
+  // 5. Tiering
+  if (tier === "tier3") {
+    cleaned = cleaned.replace(/\btidak\b/gi, "nggak");
+    cleaned = cleaned.replace(/\bsudah\b/gi, "udah");
+    cleaned = cleaned.replace(/\bmembuat\b/gi, "bikin");
+    cleaned = cleaned.replace(/\bsaja\b/gi, "aja");
+    cleaned = cleaned.replace(/\bbagaimana\b/gi, "gimana");
+    cleaned = cleaned.replace(/\bmemang\b/gi, "emang");
+  } else if (tier === "tier1") {
+    cleaned = cleaned.replace(/\bnggak\b/gi, "tidak");
+    cleaned = cleaned.replace(/\budah\b/gi, "sudah");
+    cleaned = cleaned.replace(/\bbikin\b/gi, "membuat");
+    cleaned = cleaned.replace(/\baja\b/gi, "saja");
+  }
+
+  return cleaned.replace(/[ \t]{2,}/g, " ").trim();
+}
+
+function sanitizeDeep(obj: any, tier: "tier1" | "tier2" | "tier3" = "tier2"): any {
+  if (!obj) return obj;
+  if (typeof obj === "string") {
+    return sanitizeAntiSlopText(obj, tier);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeDeep(item, tier));
+  }
+  if (typeof obj === "object") {
+    const res: any = {};
+    for (const key of Object.keys(obj)) {
+      res[key] = sanitizeDeep(obj[key], tier);
+    }
+    return res;
+  }
+  return obj;
+}
+
+function auditAntiSlopText(text: string) {
+  if (!text || text.trim().length === 0) {
+    return {
+      score: 100,
+      passed: true,
+      dashCount: 0,
+      colonCount: 0,
+      bannedWordsFound: [],
+      cadenceUniformityDetected: false,
+      burstinessGrade: "Tinggi (Manusiawi)",
+      recommendations: [],
+    };
+  }
+
+  const lowerText = text.toLowerCase();
+  const recommendations: string[] = [];
+
+  const emDashMatches = text.match(/—/g) || [];
+  const enDashMatches = text.match(/–/g) || [];
+  const dashCount = emDashMatches.length + enDashMatches.length;
+  if (dashCount > 0) {
+    recommendations.push(`Ditemukan ${dashCount} em-dash/en-dash. Harap ganti dengan titik atau koma.`);
+  }
+
+  const colonMatches = text.match(/:/g) || [];
+  const colonCount = colonMatches.length;
+
+  const bannedWordsFound: string[] = [];
+  for (const phrase of BANNED_SLOP_WORDS_ID) {
+    if (lowerText.includes(phrase)) {
+      bannedWordsFound.push(phrase);
+    }
+  }
+  if (bannedWordsFound.length > 0) {
+    recommendations.push(`Hapus kata klise AI: "${bannedWordsFound.slice(0, 3).join('", "')}".`);
+  }
+
+  const sentences = text.split(/[.!?]+/).map((s) => s.trim()).filter((s) => s.length > 0);
+  const wordCounts = sentences.map((s) => s.split(/\s+/).filter(Boolean).length);
+  let consecutiveMidLength = 0;
+  let cadenceUniformityDetected = false;
+  for (const count of wordCounts) {
+    if (count >= 16 && count <= 24) {
+      consecutiveMidLength++;
+      if (consecutiveMidLength >= 3) {
+        cadenceUniformityDetected = true;
+        break;
+      }
+    } else {
+      consecutiveMidLength = 0;
+    }
+  }
+
+  let burstinessGrade = "Tinggi (Manusiawi)";
+  if (cadenceUniformityDetected) {
+    burstinessGrade = "Kaku (Pola AI)";
+    recommendations.push("Keseragaman ritme terdeteksi (3+ kalimat mirip 17-23 kata). Campurkan kalimat pendek dan panjang.");
+  }
+
+  const penalty = dashCount * 25 + bannedWordsFound.length * 15 + (cadenceUniformityDetected ? 20 : 0);
+  const score = Math.max(10, Math.min(100, 100 - penalty));
+
+  return {
+    score,
+    passed: score >= 85 && dashCount === 0 && bannedWordsFound.length === 0,
+    dashCount,
+    colonCount,
+    bannedWordsFound,
+    cadenceUniformityDetected,
+    burstinessGrade,
+    recommendations,
+  };
+}
+
 // Global rotation counter for visual studio previews
 let fallbackImageCounter = 0;
 
@@ -359,14 +564,20 @@ async function startServer() {
       const effectiveGender = gender || "Perempuan";
       const effectiveArchetype = archetype || "The Trendsetter";
       const effectiveAesthetic = gayaVisual || aesthetic || "Clean Minimalist Chic";
+      const effectiveToneTier = (req.body.toneTier as "tier1" | "tier2" | "tier3") || "tier2";
 
       const systemInstruction = `Anda adalah Master Architect & Virtual Influencer Producer profesional kelas dunia.
 Tugas Anda adalah merancang dan menyusun identitas utuh AI Influencer (Virtual Human) yang hyper-realistic, bernilai komersial tinggi, konsisten secara visual, dan memiliki daya tarik audiens yang kuat.
+
+${ANTI_SLOP_DIRECTIVES}
+
+Tone Tier yang digunakan untuk seluruh tulisan persona (tagline, catchphrases, backstory, interaksi): ${effectiveToneTier === "tier3" ? "Tier 3 (Informal - santai, conversational, kata ganti aku/kamu, kontraksi wajar: nggak, udah, gimana)" : effectiveToneTier === "tier1" ? "Tier 1 (Formal - baku, terstruktur, tanpa kontraksi)" : "Tier 2 (Semi-formal - hangat, luwes, natural, standar blog/LinkedIn)"}.
 
 PENTING:
 1. Susun Ringkasan Identitas lengkap (Nama, Handle, Persona Tagline, Niche, Demografi, Ciri Fisik, Konsistensi Token/LoRA Anchor, Nilai Utama, Tone of Voice).
    - Jika pengguna telah memberikan nama/handle/usia/gender spesifik, WAJIB gunakan data tersebut tanpa menggantinya.
 2. Susun Profil Kepribadian mendalam (Archetype, MBTI, Minat, Filosofi Konten, Cara Berinteraksi, Aturan Sponsor Brand) selaras dengan input pengguna.
+   - Patuhi aturan Anti-Slop: nol em-dash, burstiness tinggi, tanpa formula klise 'tidak hanya... tetapi juga'.
 3. Buat TIGA PAKET PROMPT VISUAL SIAP PAKAI:
    - Paket 1: Signature Portrait & Studio Headshot (Hero profile, close-up, focal length 85mm, Rembrandt/Split lighting, micro skin texture, razor sharp focus pada mata).
    - Paket 2: Lifestyle & Daily In-Action (Candid street/cafe/workout/studio, natural 35mm lens, ambient golden hour/cinematic daylight, natural pose).
@@ -563,10 +774,14 @@ Harap buat struktur JSON persis seperti format ini:
       }
 
       parsedData.createdAt = new Date().toISOString();
-      res.json({ success: true, influencer: parsedData });
+      parsedData.toneTier = effectiveToneTier;
+      const cleanInfluencer = sanitizeDeep(parsedData, effectiveToneTier);
+      res.json({ success: true, influencer: cleanInfluencer });
     } catch (error: any) {
       console.warn("Notice in /api/influencer/build (synthesizing resilient structured influencer):", error?.message || error);
-      const fallbackData = generateFallbackInfluencer(req.body);
+      const effectiveToneTier = (req.body?.toneTier as "tier1" | "tier2" | "tier3") || "tier2";
+      const fallbackData = sanitizeDeep(generateFallbackInfluencer(req.body), effectiveToneTier);
+      fallbackData.toneTier = effectiveToneTier;
       res.json({ success: true, influencer: fallbackData, isFallback: true });
     }
   });
@@ -599,7 +814,9 @@ Formatkan jawaban Anda sebagai JSON murni (array of objects) dengan struktur ber
         model: "gemini-3.8-flash",
         contents: searchPrompt,
         config: {
-          systemInstruction: "Anda adalah analis tren media sosial real-time dan market intelligence strategist. Gunakan tool googleSearch untuk mendapatkan tren faktual terkini. Kembalikan HANYA JSON array valid.",
+          systemInstruction: `Anda adalah analis tren media sosial real-time dan market intelligence strategist. 
+${ANTI_SLOP_DIRECTIVES}
+Gunakan data faktual media sosial terkini. DILARANG menggunakan em-dash, klise AI, atau kata penggelembung. Kembalikan HANYA JSON array valid.`,
           tools: [{ googleSearch: {} }],
         },
       });
@@ -620,7 +837,7 @@ Formatkan jawaban Anda sebagai JSON murni (array of objects) dengan struktur ber
             niche: niche || "Tech & Lifestyle",
             momentum: "Explosive",
             summary: "Diskusi hangat tentang bagaimana kreator virtual melengkapi rutinitas harian manusia tanpa menggantikan sentuhan emosional.",
-            viralAngle: "Video POV 'Sehari di balik layar pemrosesan memori AI Influencer vs rutinitas manusia nyata'.",
+            viralAngle: "Video POV: Sehari di balik layar pemrosesan memori AI Influencer vs rutinitas manusia nyata.",
             trendingHashtags: ["#VirtualHuman", "#AICreator", "#BehindTheScreens", "#FutureTech"],
             audioSuggestion: "Synthwave ambient lo-fi beat dengan vinyl crackle",
             sourceGrounding: "Trending diskusi TikTok & Instagram Reels",
@@ -630,19 +847,19 @@ Formatkan jawaban Anda sebagai JSON murni (array of objects) dengan struktur ber
             title: "Micro-Ritual Wellness & Quiet Luxury",
             niche: niche || "Lifestyle",
             momentum: "High",
-            summary: "Tren audiens yang beralih dari pamer kemewahan mencolok ke rutinitas mikro penuh kesadaran (mindful rituals, sustainable materials).",
-            viralAngle: "Fit check gaya minimalis berpadu tips de-cluttering digital 5 menit.",
+            summary: "Audiens beralih dari konsumsi mencolok ke rutinitas mikro mindful seperti sustainable capsule fashion.",
+            viralAngle: "Fit check gaya minimalis berpadu tips merapikan lemari digital 5 menit.",
             trendingHashtags: ["#QuietLuxury", "#MindfulAesthetic", "#CleanLiving", "#OOTD"],
             audioSuggestion: "Acoustic chill piano loop dengan tempo 85 BPM",
             sourceGrounding: "Instagram Explore & Pinterest Trend Report",
           },
           {
             id: "trend_3",
-            title: "Interactive Dilemma: 'Bantu Aku Pilih Outfit Besok'",
+            title: "Interactive Dilemma: Bantu Aku Pilih Outfit Besok",
             niche: niche || "Fashion",
             momentum: "Rising",
             summary: "Format carousel interaktif di mana audiens diajak memvoting keputusan outfit atau aktivitas di hari esok.",
-            viralAngle: "2 visual kontras (Cyber Chic vs Cozy Earth Tone) dengan call-to-action kuat di caption.",
+            viralAngle: "2 visual kontras (Cyber Chic vs Cozy Earth Tone) dengan ajakan voting kuat di caption.",
             trendingHashtags: ["#PickMyFit", "#StylingChallenge", "#CommunityChoice"],
             audioSuggestion: "Upbeat electronic pop hook",
             sourceGrounding: "Viral engagement format di Instagram Carousels",
@@ -650,59 +867,72 @@ Formatkan jawaban Anda sebagai JSON murni (array of objects) dengan struktur ber
         ];
       }
 
-      res.json({ success: true, trends, searchedAt: new Date().toISOString() });
+      const cleanTrends = sanitizeDeep(trends, "tier2");
+      res.json({ success: true, trends: cleanTrends, searchedAt: new Date().toISOString() });
     } catch (error: any) {
       console.warn("Notice in /api/trends/discover (using curated trends fallback):", error?.message || error);
+      const fallbackTrends = [
+        {
+          id: "trend_1",
+          title: `AI & Human Co-Existence in ${req.body.niche || "Creative Industry"}`,
+          niche: req.body.niche || "Tech & Lifestyle",
+          momentum: "Explosive",
+          summary: "Diskusi hangat tentang bagaimana kreator virtual melengkapi rutinitas harian manusia tanpa menggantikan sentuhan emosional.",
+          viralAngle: "Video POV: Sehari di balik layar pemrosesan memori AI Influencer vs rutinitas manusia nyata.",
+          trendingHashtags: ["#VirtualHuman", "#AICreator", "#BehindTheScreens", "#FutureTech"],
+          audioSuggestion: "Synthwave ambient lo-fi beat dengan vinyl crackle",
+          sourceGrounding: "Trending diskusi media sosial",
+        },
+        {
+          id: "trend_2",
+          title: "Micro-Ritual Wellness & Quiet Luxury",
+          niche: req.body.niche || "Lifestyle",
+          momentum: "High",
+          summary: "Audiens beralih dari pamer konsumtif ke rutinitas mikro penuh kesadaran dan material ramah lingkungan.",
+          viralAngle: "Fit check gaya minimalis berpadu tips de-cluttering digital 5 menit.",
+          trendingHashtags: ["#QuietLuxury", "#MindfulAesthetic", "#CleanLiving", "#OOTD"],
+          audioSuggestion: "Acoustic chill piano loop dengan tempo 85 BPM",
+          sourceGrounding: "Instagram Explore & Pinterest Trend Report",
+        },
+        {
+          id: "trend_3",
+          title: "Interactive Dilemma: Bantu Aku Pilih Outfit Besok",
+          niche: req.body.niche || "Fashion",
+          momentum: "Rising",
+          summary: "Format carousel interaktif di mana audiens diajak memvoting keputusan outfit atau styling hari esok.",
+          viralAngle: "2 visual kontras (Cyber Chic vs Cozy Earth Tone) dengan ajakan voting langsung di caption.",
+          trendingHashtags: ["#PickMyFit", "#StylingChallenge", "#CommunityChoice"],
+          audioSuggestion: "Upbeat electronic pop hook",
+          sourceGrounding: "Viral engagement format di Instagram Carousels",
+        },
+      ];
       res.json({
         success: true,
-        trends: [
-          {
-            id: "trend_1",
-            title: `AI & Human Co-Existence in ${req.body.niche || "Creative Industry"}`,
-            niche: req.body.niche || "Tech & Lifestyle",
-            momentum: "Explosive",
-            summary: "Diskusi hangat tentang bagaimana kreator virtual melengkapi rutinitas harian manusia tanpa menggantikan sentuhan emosional.",
-            viralAngle: "Video POV 'Sehari di balik layar pemrosesan memori AI Influencer vs rutinitas manusia nyata'.",
-            trendingHashtags: ["#VirtualHuman", "#AICreator", "#BehindTheScreens", "#FutureTech"],
-            audioSuggestion: "Synthwave ambient lo-fi beat dengan vinyl crackle",
-            sourceGrounding: "Trending diskusi media sosial",
-          },
-          {
-            id: "trend_2",
-            title: "Micro-Ritual Wellness & Quiet Luxury",
-            niche: req.body.niche || "Lifestyle",
-            momentum: "High",
-            summary: "Tren audiens yang beralih dari pamer kemewahan mencolok ke rutinitas mikro penuh kesadaran (mindful rituals, sustainable materials).",
-            viralAngle: "Fit check gaya minimalis berpadu tips de-cluttering digital 5 menit.",
-            trendingHashtags: ["#QuietLuxury", "#MindfulAesthetic", "#CleanLiving", "#OOTD"],
-            audioSuggestion: "Acoustic chill piano loop dengan tempo 85 BPM",
-            sourceGrounding: "Instagram Explore & Pinterest Trend Report",
-          },
-          {
-            id: "trend_3",
-            title: "Interactive Dilemma: 'Bantu Aku Pilih Outfit Besok'",
-            niche: req.body.niche || "Fashion",
-            momentum: "Rising",
-            summary: "Format carousel interaktif di mana audiens diajak memvoting keputusan outfit atau aktivitas di hari esok.",
-            viralAngle: "2 visual kontras (Cyber Chic vs Cozy Earth Tone) dengan call-to-action kuat di caption.",
-            trendingHashtags: ["#PickMyFit", "#StylingChallenge", "#CommunityChoice"],
-            audioSuggestion: "Upbeat electronic pop hook",
-            sourceGrounding: "Viral engagement format di Instagram Carousels",
-          },
-        ],
+        trends: sanitizeDeep(fallbackTrends, "tier2"),
         searchedAt: new Date().toISOString(),
       });
     }
   });
 
-  // 3. Automate Content Creation based on Trends and Influencer Identity
+  // 3. Automate Content Creation based on Trends and Influencer Identity (Strictly Anti-Slop Compliant)
   app.post("/api/content/automate", async (req, res) => {
     try {
       const { influencer, selectedTrend, count = 3 } = req.body;
+      const effectiveToneTier = (req.body.toneTier || influencer?.toneTier || "tier2") as "tier1" | "tier2" | "tier3";
       const ai = getGenAI();
 
-      const systemInstruction = `Anda adalah Senior Content Strategist & Social Media Ghostwriter untuk AI Influencer terkenal.
+      const systemInstruction = `Anda adalah Senior Content Strategist & Social Media Ghostwriter untuk AI Influencer papan atas.
 Buatkan paket konten otomatis yang siap dipublikasikan berdasarkan identitas AI Influencer dan tren pasar terkini.
+
+${ANTI_SLOP_DIRECTIVES}
+
+Tone Tier yang digunakan: ${
+  effectiveToneTier === "tier3"
+    ? "Tier 3 (Informal - santai, conversational, bahasa media sosial yang asyik, kata ganti aku/kamu, kontraksi wajar: nggak, udah, gimana, emang, aja)"
+    : effectiveToneTier === "tier1"
+    ? "Tier 1 (Formal - baku, terstruktur rapi, tanpa kontraksi)"
+    : "Tier 2 (Semi-formal - hangat, luwes, komunikatif, standar blog/LinkedIn/opini majalah, code-switching wajar)"
+}.
 
 Format HANYA berupa JSON valid (array of objects) dengan properti:
 [
@@ -711,11 +941,11 @@ Format HANYA berupa JSON valid (array of objects) dengan properti:
     "trendTitle": "Judul tren yang diangkat",
     "platform": "Instagram Reel" | "Instagram Carousel" | "TikTok" | "X Post",
     "pillar": "Educational" | "Entertainment" | "Inspirational" | "Relatable",
-    "hook3s": "Hook 3 detik pertama yang sangat kuat memancing atensi (Stop the scroll)",
+    "hook3s": "Hook 3 detik pertama yang sangat kuat memancing atensi (Stop the scroll, bebas klise)",
     "visualSceneDescription": "Deskripsi detail adegan/foto visual AI Influencer yang pas",
     "readyVisualPrompt": "Prompt lengkap siap pakai untuk di-render di generator gambar dengan konsistensi wajah",
     "recommendedGenerator": "Flux" | "NanoBanana" | "Seedream" | "ChatGPT Image" | "Gemini Image" | "Midjourney",
-    "caption": "Caption lengkap dengan pembuka, isi bernilai, dan penutup",
+    "caption": "Caption lengkap dengan pembuka spesifik (tanpa 'Di era modern ini'), isi bernilai, ritme variatif (burstiness tinggi), dan nol em-dash",
     "callToAction": "Pertanyaan atau ajakan bertindak untuk mendongkrak komentar",
     "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"],
     "soundtrack": "Rekomendasi musik atau format audio viral",
@@ -727,6 +957,7 @@ Format HANYA berupa JSON valid (array of objects) dengan properti:
 - Nama: ${influencer.name} (${influencer.handle})
 - Niche: ${influencer.niche} - ${influencer.category || ""}
 - Tone of Voice: ${influencer.personalityProfile?.toneOfVoice || "Warm & Witty"}
+- Tone Tier Target: ${effectiveToneTier}
 - Ciri Konsistensi Visual: ${influencer.visualIdentity?.consistencyAnchorTokens || ""}
 - Catchphrases: ${(influencer.personalityProfile?.catchphrases || []).join(", ")}
 
@@ -735,7 +966,7 @@ Tren Pasar yang Diangkat:
 - Ringkasan: ${selectedTrend?.summary || "Eksplorasi estetika dan rutinitas modern"}
 - Viral Angle: ${selectedTrend?.viralAngle || "POV autentik dan interaktif"}
 
-Tolong buatkan ${count} paket konten otomasi yang unik, mendalam, dan langsung bisa dieksekusi.`;
+Tolong buatkan ${count} paket konten otomasi yang unik, mendalam, bebas slop AI, dan langsung bisa dieksekusi.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.8-flash",
@@ -748,46 +979,135 @@ Tolong buatkan ${count} paket konten otomasi yang unik, mendalam, dan langsung b
 
       const rawText = response.text || "";
       const posts = extractJSON(rawText);
+      const postList = Array.isArray(posts) ? posts : [posts];
+      const cleanPosts = sanitizeDeep(postList, effectiveToneTier);
 
-      res.json({ success: true, posts: Array.isArray(posts) ? posts : [posts] });
+      res.json({ success: true, posts: cleanPosts, toneTier: effectiveToneTier });
     } catch (error: any) {
       console.warn("Notice in /api/content/automate (generating structured posts fallback):", error?.message || error);
       const inf = req.body.influencer || {};
       const trend = req.body.selectedTrend || {};
+      const effectiveToneTier = (req.body?.toneTier || inf?.toneTier || "tier2") as "tier1" | "tier2" | "tier3";
+
+      const fallbackPosts = [
+        {
+          id: "post_1",
+          trendTitle: trend.title || "Gaya Hidup & Masa Depan Kreativitas Digital",
+          platform: "Instagram Reel",
+          pillar: "Educational",
+          hook3s: "Berapa jam kamu habiskan di depan layar hari ini? Coba cek rutinitas ini sebentar.",
+          visualSceneDescription: `Portrait 85mm ${inf.name || "AI Influencer"} di depan studio minimalis, menatap kamera dengan sorot mata hangat, pencahayaan golden hour lembut.`,
+          readyVisualPrompt: `${inf.visualIdentity?.consistencyAnchorTokens || ""}, sitting in studio, warm lighting, looking into lens, 8k resolution, raw photo`,
+          recommendedGenerator: "Flux",
+          caption: `Teknologi sering bikin kita lupa satu hal penting: kesadaran untuk hadir di sini sekarang. Sebagai kreator virtual, aku belajar bahwa kecepatan komputasi harus diimbangi ketenangan batin. Hari ini aku mematikan notifikasi selama dua jam penuh untuk membaca buku fisik.\n\nBagaimana caramu menjaga batas antara waktu layar dan dunia nyata hari ini?\n\nKomen ceritamu di bawah ya!`,
+          callToAction: "Tulis di kolom komentar caramu rehat dari layar hari ini!",
+          hashtags: ["#VirtualCreator", "#MindfulLiving", "#DigitalAesthetic", "#AICreator", "#SlowLiving"],
+          soundtrack: "Chill lo-fi vinyl beat 85 BPM",
+          predictedEngagement: "High Comment & Save Rate",
+        },
+        {
+          id: "post_2",
+          trendTitle: trend.title || "Sustainable Fashion Breakdown",
+          platform: "Instagram Carousel",
+          pillar: "Relatable",
+          hook3s: "Tiga aturan memilih outfit tahan lama yang ramah lingkungan:",
+          visualSceneDescription: `Candid 35mm ${inf.name || "AI Influencer"} memegang cangkir kopi keramik di cafe bertema tanaman hijau, pakaian knitwear netral.`,
+          readyVisualPrompt: `${inf.visualIdentity?.consistencyAnchorTokens || ""}, cafe aesthetic, holding ceramic mug, natural sunlight, 35mm lens, photorealistic`,
+          recommendedGenerator: "NanoBanana",
+          caption: `Geser slide untuk melihat paduan outfit minggu ini. Gaya personal bukan soal beli baju baru setiap musim. Kuncinya ada pada pemilihan bahan katun organik berkualitas dan potongan siluet abadi.\n\nSlide mana yang paling sesuai dengan seleramu minggu ini?`,
+          callToAction: "Simpan postingan ini untuk inspirasi padu padan lemari kapsulmu!",
+          hashtags: ["#OOTD", "#SustainableStyle", "#CapsuleWardrobe", "#CleanAesthetic"],
+          soundtrack: "Warm acoustic guitar rhythm",
+          predictedEngagement: "Explosive Shares & Saves",
+        },
+      ];
+
       res.json({
         success: true,
-        posts: [
-          {
-            id: "post_1",
-            trendTitle: trend.title || "Gaya Hidup & Masa Depan Kreativitas Digital",
-            platform: "Instagram Reel",
-            pillar: "Educational",
-            hook3s: "Banyak yang mengira dunia virtual itu serba otomatis tanpa jiwa. Tapi coba perhatikan ini...",
-            visualSceneDescription: `Portrait 85mm ${inf.name || "AI Influencer"} di depan studio minimalis, menatap kamera dengan sorot mata hangat, pencahayaan golden hour lembut.`,
-            readyVisualPrompt: `${inf.visualIdentity?.consistencyAnchorTokens || ""}, sitting in studio, warm lighting, looking into lens, 8k resolution, raw photo`,
-            recommendedGenerator: "Flux",
-            caption: `Di era di mana teknologi bergerak secepat kilat, kita sering lupa bahwa hal paling berharga adalah kesadaran untuk hadir di saat ini. Sebagai kreator digital, aku selalu mencari harmoni antara kecepatan komputasi dan ketelitian estetika.\n\nBagaimana kamu menyeimbangkan waktu layar dan dunia nyatamu hari ini?\n\nKomen di bawah ya!`,
-            callToAction: "Tulis di kolom komentar bagaimana caramu mindful hari ini!",
-            hashtags: ["#VirtualCreator", "#MindfulLiving", "#DigitalAesthetic", "#AICreator", "#SlowLiving"],
-            soundtrack: "Chill lo-fi vinyl beat 85 BPM",
-            predictedEngagement: "High Comment & Save Rate",
+        posts: sanitizeDeep(fallbackPosts, effectiveToneTier),
+        toneTier: effectiveToneTier,
+      });
+    }
+  });
+
+  // 4. Anti-Slop Writing Quality Audit Engine
+  app.post("/api/anti-slop/audit", (req, res) => {
+    try {
+      const { text } = req.body;
+      const audit = auditAntiSlopText(text || "");
+      res.json({ success: true, audit });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e?.message || "Audit failed" });
+    }
+  });
+
+  // 5. Anti-Slop Rewriter & Polisher Engine
+  app.post("/api/anti-slop/rewrite", async (req, res) => {
+    try {
+      const { text, toneTier = "tier2", context } = req.body;
+      if (!text || text.trim().length === 0) {
+        return res.status(400).json({ success: false, error: "Teks diperlukan untuk dipoles" });
+      }
+
+      const effectiveToneTier = (toneTier as "tier1" | "tier2" | "tier3") || "tier2";
+      const ai = getGenAI();
+
+      const prompt = `Anda adalah master editor Anti-Slop Writing v3.0 kelas dunia.
+Tugas Anda adalah menulis ulang teks berikut agar 100% bebas dari segala pola AI slop, klise, keseragaman ritme (cadence uniformity), dan tanda baca terlarang.
+
+${ANTI_SLOP_DIRECTIVES}
+
+Tone Tier Target: ${
+        effectiveToneTier === "tier3"
+          ? "Tier 3 (Informal - santai, conversational, bahasa medsos hangat, kata ganti aku/kamu, kontraksi wajar: nggak, udah, gimana, emang, aja)"
+          : effectiveToneTier === "tier1"
+          ? "Tier 1 (Formal - baku, terstruktur, tanpa kontraksi)"
+          : "Tier 2 (Semi-formal - hangat, luwes, komunikatif, standar blog/LinkedIn, code-switching wajar)"
+      }.
+
+Konteks Teks: ${context || "Caption atau naskah konten AI Influencer"}
+
+Teks Asli:
+"${text}"
+
+Tuliskan HANYA hasil teks yang sudah dipoles secara langsung, tanpa pembuka atau penutup basa-basi.`;
+
+      let rewrittenText = "";
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: prompt,
+          config: {
+            temperature: 0.65,
           },
-          {
-            id: "post_2",
-            trendTitle: trend.title || "Sustainable Fashion Breakdown",
-            platform: "Instagram Carousel",
-            pillar: "Relatable",
-            hook3s: "3 Aturan memilih outfit yang tidak lekang oleh waktu (dan ramah bumi):",
-            visualSceneDescription: `Candid 35mm ${inf.name || "AI Influencer"} memegang cangkir kopi keramik di cafe bertema tanaman hijau, pakaian knitwear netral.`,
-            readyVisualPrompt: `${inf.visualIdentity?.consistencyAnchorTokens || ""}, cafe aesthetic, holding ceramic mug, natural sunlight, 35mm lens, photorealistic`,
-            recommendedGenerator: "NanoBanana",
-            caption: `Slide untuk melihat kurasi outfit minggu ini. Otentisitas bukan tentang membeli pakaian baru setiap tren berganti, tapi bagaimana memaksimalkan apa yang sudah kita miliki dengan sentuhan personal yang kuat.\n\nSlide mana yang paling cocok dengan energimu minggu ini?`,
-            callToAction: "Save post ini untuk inspirasi styling mingguanmu!",
-            hashtags: ["#OOTD", "#SustainableStyle", "#CapsuleWardrobe", "#CleanAesthetic"],
-            soundtrack: "Warm acoustic guitar rhythm",
-            predictedEngagement: "Explosive Shares & Saves",
-          },
-        ],
+        });
+        rewrittenText = (response.text || "").trim();
+      } catch (genErr) {
+        console.warn("AI rewrite fallback to sanitizer:", genErr);
+        rewrittenText = sanitizeAntiSlopText(text, effectiveToneTier);
+      }
+
+      // Ensure zero dashes and zero slop through sanitizer pass
+      rewrittenText = sanitizeAntiSlopText(rewrittenText, effectiveToneTier);
+      const audit = auditAntiSlopText(rewrittenText);
+
+      res.json({
+        success: true,
+        originalText: text,
+        rewrittenText,
+        toneTier: effectiveToneTier,
+        audit,
+      });
+    } catch (error: any) {
+      console.error("Anti-slop rewrite error:", error);
+      const effectiveToneTier = (req.body.toneTier || "tier2") as "tier1" | "tier2" | "tier3";
+      const sanitized = sanitizeAntiSlopText(req.body.text || "", effectiveToneTier);
+      res.json({
+        success: true,
+        originalText: req.body.text,
+        rewrittenText: sanitized,
+        toneTier: effectiveToneTier,
+        audit: auditAntiSlopText(sanitized),
       });
     }
   });

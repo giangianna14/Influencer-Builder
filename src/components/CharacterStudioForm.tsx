@@ -72,6 +72,7 @@ const PRESET_CHARACTERS: { name: string; tag: string; data: CharacterCreationDat
       platformUtama: ["Instagram", "TikTok", "YouTube Shorts"],
       tujuanAI: "Kolaborasi brand fashion sustainable & luxury skincare, serta membangun komunitas sadar mode",
       catatanTambahan: "Tampilkan tekstur visual mikro kulit asli dan serat kain katun/linen secara otentik tanpa efek plastik.",
+      toneTier: "tier2",
     },
   },
   {
@@ -116,6 +117,7 @@ const PRESET_CHARACTERS: { name: string; tag: string; data: CharacterCreationDat
       platformUtama: ["YouTube Shorts", "Instagram", "X / Twitter"],
       tujuanAI: "Menjadi tech reviewer AI terpercaya nomor 1 di Asia Tenggara dan brand ambassador gadget mutakhir",
       catatanTambahan: "Pencahayaan harus memiliki kontras tinggi sinematik dengan bayangan dramatis pada gadget dan wajah.",
+      toneTier: "tier2",
     },
   },
   {
@@ -160,6 +162,7 @@ const PRESET_CHARACTERS: { name: string; tag: string; data: CharacterCreationDat
       platformUtama: ["Instagram", "TikTok", "YouTube Shorts"],
       tujuanAI: "Edukasi kesehatan holistik, mempromosikan clean wellness brands, dan memandu gaya hidup seimbang",
       catatanTambahan: "Nuansa visual harus memancarkan cahaya tropis hangat yang menenangkan dan organik.",
+      toneTier: "tier3",
     },
   },
 ];
@@ -573,6 +576,62 @@ export const CharacterStudioForm: React.FC<CharacterStudioFormProps> = ({
                 placeholder="Contoh: Mindful in a hyperconnected world | Render your reality"
                 className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 outline-none focus:border-indigo-500"
               />
+            </div>
+
+            {/* Anti-Slop Writing Tone Tier Selector */}
+            <div className="sm:col-span-2 lg:col-span-3 rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 text-[11px] font-bold">
+                    ✓
+                  </span>
+                  <label className="text-xs font-bold text-indigo-200">
+                    Register Bahasa & Standar Anti-Slop Writing v3.0:
+                  </label>
+                </div>
+                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full w-fit">
+                  0 Em-Dash • Nol Klise AI • Bursty Cadence
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    tier: "tier1" as const,
+                    title: "Tier 1: Formal",
+                    desc: "Bahasa baku, terstruktur, resmi. Tanpa kontraksi. Cocok untuk korporat, fintech, & riset.",
+                  },
+                  {
+                    tier: "tier2" as const,
+                    title: "Tier 2: Semi-formal (Default)",
+                    desc: "Hangat, komunikatif, luwes, standar blog & LinkedIn. Code-switching wajar & natural.",
+                  },
+                  {
+                    tier: "tier3" as const,
+                    title: "Tier 3: Informal / Medsos",
+                    desc: "Bahasa obrolan akrab, kata ganti aku/kamu, kontraksi wajar (nggak, udah, gimana).",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.tier}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, toneTier: item.tier })}
+                    className={`text-left p-3 rounded-lg border transition-all ${
+                      (formData.toneTier || "tier2") === item.tier
+                        ? "border-indigo-400 bg-indigo-600/20 text-white shadow-sm ring-1 ring-indigo-400/50"
+                        : "border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-zinc-200 mb-1 flex items-center justify-between">
+                      <span>{item.title}</span>
+                      {(formData.toneTier || "tier2") === item.tier && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+                      )}
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-zinc-400">{item.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

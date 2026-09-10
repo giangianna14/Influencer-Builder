@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Radio,
   Sparkles,
@@ -22,8 +22,12 @@ import {
   Instagram,
   Twitter,
   Video,
+  ShieldCheck,
+  Zap,
+  Wand2,
 } from "lucide-react";
 import { AIInfluencer, RealtimeTrend, AutomatedContentPost } from "../types";
+import { auditAntiSlop, sanitizeAntiSlop } from "../utils/antiSlop";
 
 interface RealtimeTrendsAndAutomationProps {
   influencer: AIInfluencer;
@@ -48,6 +52,52 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
   const [regionQuery, setRegionQuery] = useState("Indonesia & Global");
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const [localPosts, setLocalPosts] = useState<AutomatedContentPost[]>(automatedPosts);
+  const [polishingPostId, setPolishingPostId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalPosts(automatedPosts);
+  }, [automatedPosts]);
+
+  const handlePolishPost = async (postId: string, tier: "tier1" | "tier2" | "tier3") => {
+    const post = localPosts.find((p) => p.id === postId);
+    if (!post) return;
+    setPolishingPostId(postId);
+    try {
+      const res = await fetch("/api/anti-slop/rewrite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: post.caption,
+          toneTier: tier,
+          context: `Caption media sosial untuk influencer ${influencer.name} dalam niche ${influencer.niche}`,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.rewrittenText) {
+        setLocalPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, caption: data.rewrittenText, toneTier: tier }
+              : p
+          )
+        );
+      } else {
+        const sanitized = sanitizeAntiSlop(post.caption);
+        setLocalPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, caption: sanitized, toneTier: tier } : p))
+        );
+      }
+    } catch (err) {
+      console.warn("Failed to polish via API, falling back to local sanitize:", err);
+      const sanitized = sanitizeAntiSlop(post.caption);
+      setLocalPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, caption: sanitized, toneTier: tier } : p))
+      );
+    } finally {
+      setPolishingPostId(null);
+    }
+  };
 
   const handleRefreshTrends = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -248,11 +298,11 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
           </div>
 
           <span className="text-xs text-zinc-400">
-            {automatedPosts.length} Paket Konten Aktif
+            {localPosts.length} Paket Konten Aktif
           </span>
         </div>
 
-        {automatedPosts.length === 0 ? (
+        {localPosts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-500">
             <Layers className="h-10 w-10 text-zinc-600 mb-3" />
             <p className="text-sm font-semibold text-zinc-300">Belum ada konten yang di-generate</p>
@@ -262,7 +312,7 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {automatedPosts.map((post) => (
+            {localPosts.map((post) => (
               <div
                 key={post.id}
                 className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/80 shadow-md"
@@ -362,11 +412,65 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
                   {/* Right Column: Full Caption, CTA, and Hashtags (lg:col-span-7) */}
                   <div className="space-y-4 lg:col-span-7">
                     <div>
-                      <span className="text-xs font-semibold text-zinc-400 block mb-1.5">
-                        Draft Caption Instagram / TikTok / X:
-                      </span>
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5">
+                        <span className="text-xs font-semibold text-zinc-400">
+                          Draft Caption Instagram / TikTok / X:
+                        </span>
+
+                        {/* Anti-Slop Audit Indicator */}
+                        {(() => {
+                          const audit = auditAntiSlop(post.caption);
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                                  audit.score >= 90
+                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                }`}
+                                title={`Skor Anti-Slop: ${audit.score}/100. Em-dash: ${audit.dashCount}. Klise: ${audit.bannedWordsFound.length}`}
+                              >
+                                <ShieldCheck className="h-3 w-3" />
+                                <span>Anti-Slop: {audit.score}/100</span>
+                              </span>
+                              <span className="text-[10px] text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded">
+                                {audit.dashCount === 0 ? "0 Em-Dash" : "⚠ Em-Dash"}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
                       <div className="whitespace-pre-wrap rounded-lg bg-zinc-900/90 p-4 text-xs sm:text-sm leading-relaxed text-zinc-200 border border-zinc-800 select-all max-h-64 overflow-y-auto">
                         {post.caption}
+                      </div>
+
+                      {/* Anti-Slop Polisher Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 mt-2 p-2 rounded-lg bg-indigo-950/20 border border-indigo-500/20">
+                        <div className="flex items-center gap-1 text-[11px] text-indigo-300">
+                          <Wand2 className="h-3 w-3 text-indigo-400" />
+                          <span>Poles Anti-Slop Writing:</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {(["tier1", "tier2", "tier3"] as const).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              disabled={polishingPostId === post.id}
+                              onClick={() => handlePolishPost(post.id, t)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                                post.toneTier === t
+                                  ? "bg-indigo-600 text-white shadow-sm"
+                                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                              }`}
+                            >
+                              {polishingPostId === post.id ? (
+                                <RefreshCw className="h-2.5 w-2.5 animate-spin inline mr-1" />
+                              ) : null}
+                              {t === "tier1" ? "Tier 1 (Formal)" : t === "tier2" ? "Tier 2 (Semi)" : "Tier 3 (Medsos)"}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
