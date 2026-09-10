@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Plus, Download, Radio, UserCheck, Bot, ShieldCheck, BookOpen, Share2 } from "lucide-react";
+import { Sparkles, Plus, Download, Radio, UserCheck, Bot, ShieldCheck, BookOpen, Share2, Mic } from "lucide-react";
 import { AIInfluencer } from "../types";
 
 interface HeaderProps {
@@ -10,6 +10,7 @@ interface HeaderProps {
   onExportDossier: () => void;
   onOpenGuide?: () => void;
   onOpenSocialMeta?: () => void;
+  onOpenVoiceover?: () => void;
   isTrendsLoading?: boolean;
 }
 
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onExportDossier,
   onOpenGuide,
   onOpenSocialMeta,
+  onOpenVoiceover,
   isTrendsLoading = false,
 }) => {
   return (
@@ -89,6 +91,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Radio className={`h-3 w-3 ${isTrendsLoading ? "animate-spin text-amber-400" : "animate-pulse text-emerald-400"}`} />
             <span>{isTrendsLoading ? "Scanning Web..." : "Trend Radar Live"}</span>
           </div>
+
+          {/* Voice-over Studio Quick Button */}
+          {onOpenVoiceover && (
+            <button
+              id="btn-open-voiceover-header"
+              onClick={onOpenVoiceover}
+              className="hidden md:flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-300 transition-colors hover:bg-indigo-500/20 hover:text-white"
+              title="Buka Voice-over Studio Video Pendek"
+            >
+              <Mic className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Voice-over</span>
+            </button>
+          )}
 
           {/* Panduan Pemula Button */}
           {onOpenGuide && (

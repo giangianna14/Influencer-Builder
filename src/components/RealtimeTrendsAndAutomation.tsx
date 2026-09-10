@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Zap,
   Wand2,
+  Mic,
 } from "lucide-react";
 import { AIInfluencer, RealtimeTrend, AutomatedContentPost } from "../types";
 import { auditAntiSlop, sanitizeAntiSlop } from "../utils/antiSlop";
@@ -37,6 +38,7 @@ interface RealtimeTrendsAndAutomationProps {
   onAutomateContent: (trend: RealtimeTrend) => Promise<void>;
   isAutomatingContent: boolean;
   automatedPosts: AutomatedContentPost[];
+  onConvertToVoiceover?: (promptText: string) => void;
 }
 
 export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationProps> = ({
@@ -47,6 +49,7 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
   onAutomateContent,
   isAutomatingContent,
   automatedPosts,
+  onConvertToVoiceover,
 }) => {
   const [nicheQuery, setNicheQuery] = useState(influencer.niche);
   const [regionQuery, setRegionQuery] = useState("Indonesia & Global");
@@ -383,19 +386,32 @@ export const RealtimeTrendsAndAutomation: React.FC<RealtimeTrendsAndAutomationPr
                         <span className="text-xs font-semibold text-amber-400">
                           Prompt Visual Siap Render ({post.recommendedGenerator}):
                         </span>
-                        <button
-                          onClick={() => handleCopyVisualPrompt(post)}
-                          className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                        >
-                          {copiedPromptId === post.id ? (
-                            <span className="text-emerald-400">Tersalin</span>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              <span>Salin Prompt</span>
-                            </>
+                        <div className="flex items-center gap-2">
+                          {onConvertToVoiceover && (
+                            <button
+                              type="button"
+                              onClick={() => onConvertToVoiceover(`${post.hook3s}. ${post.readyVisualPrompt}`)}
+                              className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium transition-colors"
+                              title="Jadikan ide naskah voice-over video pendek"
+                            >
+                              <Mic className="h-3 w-3" />
+                              <span>Ke Voice-over</span>
+                            </button>
                           )}
-                        </button>
+                          <button
+                            onClick={() => handleCopyVisualPrompt(post)}
+                            className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                          >
+                            {copiedPromptId === post.id ? (
+                              <span className="text-emerald-400">Tersalin</span>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3" />
+                                <span>Salin Prompt</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <pre className="whitespace-pre-wrap rounded-lg bg-zinc-900 p-2.5 font-mono text-[11px] text-zinc-300 border border-zinc-800 select-all max-h-36 overflow-y-auto">
                         {post.readyVisualPrompt}

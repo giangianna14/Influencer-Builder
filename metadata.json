@@ -1,6 +1,6 @@
 {
   "name": "AI Influencer Builder",
-  "description": "Platform AI untuk menyusun ringkasan identitas influencer, profil kepribadian, tiga paket visual prompt multi-generator (NanoBanana, Flux, Seedream, ChatGPT, Gemini), serta otomasi konten berbasis tren pasar real-time.",
+  "description": "Platform AI untuk merancang profil persona influencer virtual, paket prompt multi-generator (Flux, Midjourney, Seedream), skrip voice-over video pendek, radar tren real-time, dan audit Anti-Slop Writing.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

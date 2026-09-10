@@ -9,13 +9,18 @@ import { CharacterStudioForm } from "./components/CharacterStudioForm";
 import { AntiSlopStudio } from "./components/AntiSlopStudio";
 import { TutorialGuideView } from "./components/TutorialGuideView";
 import { SocialMetaPreview } from "./components/SocialMetaPreview";
+import { VoiceoverStudio } from "./components/VoiceoverStudio";
+import { VisualMoodboard } from "./components/VisualMoodboard";
 import { defaultInfluencers, initialRealtimeTrends } from "./data/defaultInfluencers";
+import { defaultMoodboardItems } from "./data/defaultMoodboards";
 import {
   AIInfluencer,
   RealtimeTrend,
   AutomatedContentPost,
   BuilderFormState,
   CharacterCreationData,
+  MoodboardItem,
+  MoodboardCategory,
 } from "./types";
 import {
   injectOpenGraphMetaTags,
@@ -36,6 +41,8 @@ import {
   ShieldCheck,
   BookOpen,
   Share2,
+  Mic,
+  Images,
 } from "lucide-react";
 
 export default function App() {
@@ -103,14 +110,29 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
 
   // UI state
   const [activeTab, setActiveTab] = useState<
-    "guide" | "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop" | "meta"
+    "guide" | "identity" | "personality" | "prompts" | "voiceover" | "moodboard" | "trends" | "studio" | "antislop" | "meta"
   >("identity");
+  const [voiceoverPrompt, setVoiceoverPrompt] = useState<string>("");
   const [isBuilderModalOpen, setIsBuilderModalOpen] = useState(false);
   const [isBuildingInfluencer, setIsBuildingInfluencer] = useState(false);
   const [isDiscoveringTrends, setIsDiscoveringTrends] = useState(false);
   const [isAutomatingContent, setIsAutomatingContent] = useState(false);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Moodboard State per Influencer
+  const [moodboardItems, setMoodboardItems] = useState<Record<string, MoodboardItem[]>>(() => {
+    try {
+      const saved = localStorage.getItem("ai_influencers_moodboards");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") return parsed;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return defaultMoodboardItems;
+  });
 
   // Sync to localStorage
   useEffect(() => {
@@ -128,6 +150,14 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
       console.error(e);
     }
   }, [trends]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ai_influencers_moodboards", JSON.stringify(moodboardItems));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [moodboardItems]);
 
   // Dynamically sync Open Graph & Twitter meta tags to document.head whenever active influencer changes
   useEffect(() => {
@@ -235,6 +265,85 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
     }
   };
 
+  // Current influencer's moodboard items
+  const currentMoodboardItems = moodboardItems[activeInfluencer.id] || [];
+
+  // Add Item to Moodboard
+  const handleAddMoodboardItem = (
+    newItem: Omit<MoodboardItem, "id" | "createdAt" | "influencerId">
+  ) => {
+    const item: MoodboardItem = {
+      ...newItem,
+      id: `mb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      influencerId: activeInfluencer.id,
+      createdAt: new Date().toISOString(),
+    };
+    setMoodboardItems((prev) => ({
+      ...prev,
+      [activeInfluencer.id]: [item, ...(prev[activeInfluencer.id] || [])],
+    }));
+    showToast("Referensi visual baru berhasil ditambahkan ke moodboard!");
+  };
+
+  // Toggle Favorite Status in Moodboard
+  const handleToggleMoodboardFavorite = (id: string) => {
+    setMoodboardItems((prev) => ({
+      ...prev,
+      [activeInfluencer.id]: (prev[activeInfluencer.id] || []).map((it) =>
+        it.id === id ? { ...it, isFavorite: !it.isFavorite } : it
+      ),
+    }));
+  };
+
+  // Delete Item from Moodboard
+  const handleDeleteMoodboardItem = (id: string) => {
+    setMoodboardItems((prev) => ({
+      ...prev,
+      [activeInfluencer.id]: (prev[activeInfluencer.id] || []).filter((it) => it.id !== id),
+    }));
+    showToast("Referensi visual dihapus dari moodboard.");
+  };
+
+  // Set Moodboard Image as Primary Avatar
+  const handleSetAsAvatar = (imageUrl: string) => {
+    const updated = { ...activeInfluencer, avatarUrl: imageUrl };
+    setActiveInfluencer(updated);
+    setInfluencers((prev) => prev.map((inf) => (inf.id === updated.id ? updated : inf)));
+    showToast("Gambar berhasil ditetapkan sebagai avatar profil utama!");
+  };
+
+  // Generate Reference Image for Moodboard via AI
+  const handleGenerateMoodboardReference = async (
+    prompt: string,
+    category: MoodboardCategory
+  ): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/influencer/generate-preview-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `${activeInfluencer.visualIdentity.consistencyAnchorTokens}, ${prompt}`,
+          aspectRatio: category === "Lifestyle" ? "16:9" : category === "Fashion" ? "3:4" : "1:1",
+          gender: activeInfluencer.demographics.gender,
+          ethnicity: activeInfluencer.demographics.ethnicity,
+          style: activeInfluencer.visualIdentity.signatureStyle,
+          packageKey: category.toLowerCase(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        showToast("Visual referensi berhasil di-render!");
+        return data.imageUrl;
+      }
+      showToast(data.message || "Gagal merender visual referensi.");
+      return null;
+    } catch (e) {
+      console.warn("Reference render notice:", e);
+      showToast("Gagal merender visual referensi.");
+      return null;
+    }
+  };
+
   // Generate Image Preview / Avatar using Gemini Image or Curated Studio
   const handleGenerateAvatar = async () => {
     setIsGeneratingAvatar(true);
@@ -257,10 +366,31 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         const updated = { ...activeInfluencer, avatarUrl: data.imageUrl };
         setActiveInfluencer(updated);
         setInfluencers((prev) => prev.map((inf) => (inf.id === updated.id ? updated : inf)));
+
+        // Automatically archive to active influencer's moodboard
+        const avatarMoodboardItem: MoodboardItem = {
+          id: `mb_avatar_${Date.now()}`,
+          influencerId: updated.id,
+          title: `Avatar Profil: ${updated.name}`,
+          imageUrl: data.imageUrl,
+          category: "Avatar",
+          aspectRatio: "1:1",
+          promptUsed: prompt,
+          sourceGenerator: "Gemini Image Studio",
+          colorPalette: updated.visualIdentity.colorPalette.slice(0, 3),
+          notes: "Avatar profil studio yang baru saja dibuat melalui generator visual.",
+          isFavorite: true,
+          createdAt: new Date().toISOString(),
+        };
+        setMoodboardItems((prev) => ({
+          ...prev,
+          [updated.id]: [avatarMoodboardItem, ...(prev[updated.id] || [])],
+        }));
+
         if (data.isFallback) {
-          showToast("Avatar visual studio berkualitas tinggi berhasil disinkronkan!");
+          showToast("Avatar visual studio berkualitas tinggi berhasil disinkronkan & masuk moodboard!");
         } else {
-          showToast("Avatar baru berhasil di-render oleh model AI!");
+          showToast("Avatar baru berhasil di-render dan ditambahkan ke moodboard!");
         }
       } else {
         showToast(data.message || "Preview avatar studio visual siap digunakan.");
@@ -290,10 +420,30 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
       });
       const data = await res.json();
       if (data.success && data.imageUrl) {
+        // Automatically save rendered preview to moodboard
+        const renderMoodboardItem: MoodboardItem = {
+          id: `mb_pkg_${Date.now()}`,
+          influencerId: activeInfluencer.id,
+          title: `Render ${packageKey.toUpperCase()}: ${activeInfluencer.name}`,
+          imageUrl: data.imageUrl,
+          category: packageKey.includes("brand") ? "Portrait" : packageKey.includes("lifestyle") ? "Lifestyle" : "Portrait",
+          aspectRatio: packageKey === "package3" || packageKey.includes("brand") ? "16:9" : "3:4",
+          promptUsed: promptText,
+          sourceGenerator: "AI Studio Render",
+          colorPalette: activeInfluencer.visualIdentity.colorPalette.slice(0, 3),
+          notes: `Visual render langsung dari prompt ${packageKey}.`,
+          isFavorite: false,
+          createdAt: new Date().toISOString(),
+        };
+        setMoodboardItems((prev) => ({
+          ...prev,
+          [activeInfluencer.id]: [renderMoodboardItem, ...(prev[activeInfluencer.id] || [])],
+        }));
+
         if (data.isFallback) {
-          showToast("Visual studio preview siap! Prompt siap disalin ke NanoBanana, Flux, & Seedream.");
+          showToast("Visual studio preview siap dan tersimpan di moodboard!");
         } else {
-          showToast("Visual preview berhasil di-render secara langsung!");
+          showToast("Visual preview berhasil di-render dan tersimpan di moodboard!");
         }
         return data.imageUrl;
       } else {
@@ -351,6 +501,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
         onExportDossier={handleExportDossier}
         onOpenGuide={() => setActiveTab("guide")}
         onOpenSocialMeta={() => setActiveTab("meta")}
+        onOpenVoiceover={() => setActiveTab("voiceover")}
         isTrendsLoading={isDiscoveringTrends}
       />
 
@@ -431,6 +582,38 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
             </button>
 
             <button
+              id="tab-moodboard"
+              onClick={() => setActiveTab("moodboard")}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === "moodboard"
+                  ? "bg-indigo-600 text-white shadow-sm border border-indigo-400"
+                  : "text-zinc-400 hover:text-indigo-300 hover:bg-indigo-950/30"
+              }`}
+            >
+              <Images className="h-4 w-4 text-indigo-400" />
+              <span>Moodboard Visual</span>
+              <span className="rounded-full bg-indigo-500/20 px-1.5 py-0.2 text-[10px] text-indigo-300 font-bold">
+                {currentMoodboardItems.length}
+              </span>
+            </button>
+
+            <button
+              id="tab-voiceover"
+              onClick={() => setActiveTab("voiceover")}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === "voiceover"
+                  ? "bg-indigo-600 text-white shadow-sm border border-indigo-400"
+                  : "text-zinc-400 hover:text-indigo-300 hover:bg-indigo-950/30"
+              }`}
+            >
+              <Mic className="h-4 w-4 text-indigo-400" />
+              <span>Voice-over Studio</span>
+              <span className="rounded-full bg-indigo-500/20 px-1.5 py-0.2 text-[10px] text-indigo-300 font-bold">
+                Baru
+              </span>
+            </button>
+
+            <button
               id="tab-trends"
               onClick={() => setActiveTab("trends")}
               className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold transition-all ${
@@ -503,18 +686,27 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
               onGenerateAvatar={handleGenerateAvatar}
               isGeneratingAvatar={isGeneratingAvatar}
               onOpenSocialMeta={() => setActiveTab("meta")}
+              onOpenVoiceover={() => setActiveTab("voiceover")}
+              onOpenMoodboard={() => setActiveTab("moodboard")}
             />
             {/* Quick Next Jump */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4">
               <div>
                 <h4 className="text-xs font-semibold text-zinc-300">
-                  Langkah Selanjutnya: Jelajahi Profil Kepribadian & 3 Paket Prompt
+                  Langkah Selanjutnya: Jelajahi Profil Kepribadian, Moodboard & 3 Paket Prompt
                 </h4>
                 <p className="text-[11px] text-zinc-500">
-                  Kepribadian mendalam dan prompt siap pakai untuk NanoBanana, Flux, Seedream, ChatGPT, & Gemini
+                  Galeri moodboard visual masonry, kepribadian mendalam, dan prompt siap pakai untuk NanoBanana, Flux, Seedream, & Gemini
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("moodboard")}
+                  className="rounded-lg border border-indigo-500/30 bg-indigo-950/40 px-3 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/60 transition-colors flex items-center gap-1.5"
+                >
+                  <Images className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>Buka Moodboard</span>
+                </button>
                 <button
                   onClick={() => setActiveTab("studio")}
                   className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 transition-colors"
@@ -525,7 +717,7 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
                   onClick={() => setActiveTab("prompts")}
                   className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Buka Paket Prompt Visual →
+                  Paket Prompt Visual →
                 </button>
               </div>
             </div>
@@ -540,6 +732,39 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
           <PromptPackagesSection
             influencer={activeInfluencer}
             onTestRenderImage={handleTestRenderImage}
+            onConvertToVoiceover={(prompt) => {
+              setVoiceoverPrompt(prompt);
+              setActiveTab("voiceover");
+              showToast("Prompt visual berhasil dimuat ke Voice-over Studio!");
+            }}
+          />
+        )}
+
+        {activeTab === "moodboard" && (
+          <VisualMoodboard
+            influencer={activeInfluencer}
+            items={currentMoodboardItems}
+            onAddItem={handleAddMoodboardItem}
+            onToggleFavorite={handleToggleMoodboardFavorite}
+            onDeleteItem={handleDeleteMoodboardItem}
+            onSetAsAvatar={handleSetAsAvatar}
+            onConvertToVoiceover={(prompt) => {
+              setVoiceoverPrompt(prompt);
+              setActiveTab("voiceover");
+              showToast("Prompt visual dimuat ke Voice-over Studio!");
+            }}
+            onGenerateNewReference={handleGenerateMoodboardReference}
+          />
+        )}
+
+        {activeTab === "voiceover" && (
+          <VoiceoverStudio
+            influencer={activeInfluencer}
+            initialPrompt={voiceoverPrompt}
+            onSendToAntiSlop={() => {
+              setActiveTab("antislop");
+              showToast("Naskah siap diaudit di Studio Anti-Slop!");
+            }}
           />
         )}
 
@@ -552,6 +777,11 @@ Menurut kalian, apakah 5 tahun lagi lemari fisik kita bakal digantikan sepenuhny
             onAutomateContent={handleAutomateContent}
             isAutomatingContent={isAutomatingContent}
             automatedPosts={automatedPosts}
+            onConvertToVoiceover={(prompt) => {
+              setVoiceoverPrompt(prompt);
+              setActiveTab("voiceover");
+              showToast("Konsep konten dimuat ke Voice-over Studio!");
+            }}
           />
         )}
 

@@ -16,11 +16,12 @@ import {
   Copy,
   Check,
   Compass,
+  Mic,
 } from "lucide-react";
 
 interface TutorialGuideViewProps {
   onNavigateTab: (
-    tab: "identity" | "personality" | "prompts" | "trends" | "studio" | "antislop" | "meta"
+    tab: "identity" | "personality" | "prompts" | "voiceover" | "trends" | "studio" | "antislop" | "meta"
   ) => void;
   onOpenCreateModal: () => void;
 }
@@ -118,6 +119,22 @@ export const TutorialGuideView: React.FC<TutorialGuideViewProps> = ({
     },
     {
       step: 6,
+      title: "Ubah Prompt Menjadi Skrip Voice-over Video Pendek",
+      subtitle: "Menyusun naskah per adegan, teleprompter latihan, dan ekspor subtitle SRT",
+      icon: Mic,
+      color: "from-indigo-600 to-pink-600",
+      content: [
+        "Buka tab Voice-over Studio atau klik tombol 'Naskah Voice-over' yang tersedia di kartu prompt visual maupun kartu postingan radar tren.",
+        "Pilih durasi target video (15 detik, 30 detik, atau 60 detik) dan gaya bahasa karakter yang kamu kehendaki.",
+        "Sistem cerdas akan membedah prompt menjadi hook pembuka 3 detik, adegan visual, dan kalimat narasi suara yang santai dan alami.",
+        "Gunakan fitur Teleprompter Interaktif dengan kontrol kecepatan baca untuk latihan pengisian suara, serta unduh file subtitle (.SRT) siap pakai untuk CapCut atau Premiere.",
+      ],
+      actionText: "Buka Voice-over Studio",
+      action: () => onNavigateTab("voiceover"),
+      tip: "Naskah narasi otomatis lolos uji Anti-Slop Writing v3.0, bebas em-dash, dan nyaman dibaca dengan tempo manusia.",
+    },
+    {
+      step: 7,
       title: "Periksa Mutu Teks di Studio Anti-Slop v3.0",
       subtitle: "Memastikan naskah terdengar alami, bersahabat, dan bebas dari gaya kaku AI",
       icon: ShieldCheck,
@@ -133,7 +150,7 @@ export const TutorialGuideView: React.FC<TutorialGuideViewProps> = ({
       tip: "Pilih Tier 3 bila naskah ditujukan untuk video santai Instagram Reels atau konten TikTok.",
     },
     {
-      step: 7,
+      step: 8,
       title: "Simpan dan Ekspor Berkas Karakter",
       subtitle: "Menyimpan seluruh data persona agar aman dan bisa dibuka kapan saja",
       icon: Download,

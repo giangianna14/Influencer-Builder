@@ -15,12 +15,14 @@ import {
   Eye,
   RefreshCw,
   Zap,
+  Mic,
 } from "lucide-react";
 import { AIInfluencer, PromptPackageDetails, GeneratorPrompts } from "../types";
 
 interface PromptPackagesSectionProps {
   influencer: AIInfluencer;
   onTestRenderImage: (packageKey: string, promptText: string) => Promise<string | null>;
+  onConvertToVoiceover?: (promptText: string) => void;
 }
 
 type GeneratorKey = "nanoBanana" | "flux" | "seedream" | "chatgptImage" | "geminiImage" | "midjourney";
@@ -37,6 +39,7 @@ const GENERATORS: { key: GeneratorKey; label: string; badge: string; desc: strin
 export const PromptPackagesSection: React.FC<PromptPackagesSectionProps> = ({
   influencer,
   onTestRenderImage,
+  onConvertToVoiceover,
 }) => {
   const [activePackageTab, setActivePackageTab] = useState<"package1" | "package2" | "package3">("package1");
   const [selectedGenerators, setSelectedGenerators] = useState<Record<string, GeneratorKey>>({
@@ -353,6 +356,19 @@ ${currentPkg.generatorPrompts.midjourney}
                   </>
                 )}
               </button>
+
+              {/* Voice-over Script Converter Button */}
+              {onConvertToVoiceover && (
+                <button
+                  id={`btn-voiceover-${activePackageTab}`}
+                  onClick={() => onConvertToVoiceover(currentPromptText)}
+                  className="flex items-center gap-1.5 rounded-lg border border-indigo-500/40 bg-indigo-950/40 px-3 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50 active:scale-95 transition-all"
+                  title="Ubah teks prompt ini menjadi skrip narasi voice-over video pendek"
+                >
+                  <Mic className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>Naskah Voice-over</span>
+                </button>
+              )}
             </div>
           </div>
 

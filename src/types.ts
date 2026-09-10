@@ -196,3 +196,69 @@ export interface SocialMetaConfig {
   locale: string;
   type: "profile" | "website" | "article";
 }
+
+export interface VoiceoverScene {
+  sceneNumber: number;
+  timestamp: string; // contoh: "00:00 - 00:03"
+  durationSec: number;
+  visualCue: string;
+  narrationText: string;
+  toneDelivery: string;
+  onScreenText?: string;
+}
+
+export interface VoiceoverScript {
+  id: string;
+  title: string;
+  sourcePrompt: string;
+  platform: "TikTok" | "Instagram Reel" | "YouTube Shorts";
+  targetDurationSec: 15 | 30 | 60;
+  estimatedReadingTimeSec: number;
+  totalWordCount: number;
+  wordsPerMinute?: number;
+  hook3s: string;
+  scenes: VoiceoverScene[];
+  callToAction: string;
+  soundtrackSuggestion: string;
+  audioPacingVibe: string;
+  fullNarration: string;
+  toneTier: "tier1" | "tier2" | "tier3";
+  voiceStyle: "Energetik" | "Santai" | "Sinematik" | "Edukasi" | "Intim";
+  createdAt?: string;
+}
+
+export interface VoiceoverGenerationRequest {
+  promptText: string;
+  influencer?: Partial<AIInfluencer>;
+  targetDurationSec?: 15 | 30 | 60;
+  platform?: "TikTok" | "Instagram Reel" | "YouTube Shorts";
+  voiceStyle?: "Energetik" | "Santai" | "Sinematik" | "Edukasi" | "Intim";
+  toneTier?: "tier1" | "tier2" | "tier3";
+  language?: string;
+  customInstructions?: string;
+}
+
+export type MoodboardCategory =
+  | "Avatar"
+  | "Portrait"
+  | "Lifestyle"
+  | "Fashion"
+  | "Setting"
+  | "Aesthetic";
+
+export interface MoodboardItem {
+  id: string;
+  influencerId: string;
+  title: string;
+  imageUrl: string;
+  category: MoodboardCategory;
+  aspectRatio?: "1:1" | "4:5" | "9:16" | "16:9" | "3:4";
+  promptUsed?: string;
+  sourceGenerator?: string;
+  colorPalette?: string[];
+  notes?: string;
+  isFavorite?: boolean;
+  createdAt: string;
+}
+
+

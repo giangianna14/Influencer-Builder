@@ -13,6 +13,8 @@ import {
   Layers,
   Fingerprint,
   Share2,
+  Mic,
+  Images,
 } from "lucide-react";
 import { AIInfluencer } from "../types";
 
@@ -21,6 +23,8 @@ interface IdentitySummaryCardProps {
   onGenerateAvatar?: () => void;
   isGeneratingAvatar?: boolean;
   onOpenSocialMeta?: () => void;
+  onOpenVoiceover?: () => void;
+  onOpenMoodboard?: () => void;
 }
 
 export const IdentitySummaryCard: React.FC<IdentitySummaryCardProps> = ({
@@ -28,6 +32,8 @@ export const IdentitySummaryCard: React.FC<IdentitySummaryCardProps> = ({
   onGenerateAvatar,
   isGeneratingAvatar = false,
   onOpenSocialMeta,
+  onOpenVoiceover,
+  onOpenMoodboard,
 }) => {
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
@@ -112,8 +118,32 @@ export const IdentitySummaryCard: React.FC<IdentitySummaryCardProps> = ({
             </div>
           </div>
 
-          {onOpenSocialMeta && (
-            <div className="shrink-0 pt-2 sm:pt-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 sm:pt-0">
+            {onOpenMoodboard && (
+              <button
+                id="btn-open-moodboard-card"
+                onClick={onOpenMoodboard}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-300 transition-colors hover:bg-indigo-500/20 hover:text-white shadow-sm"
+                title="Buka Moodboard Visual & Galeri Gaya"
+              >
+                <Images className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Moodboard Visual</span>
+              </button>
+            )}
+
+            {onOpenVoiceover && (
+              <button
+                id="btn-open-voiceover-card"
+                onClick={onOpenVoiceover}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-semibold text-indigo-300 transition-colors hover:bg-indigo-500/20 hover:text-white shadow-sm"
+                title="Buka Voice-over Studio untuk Karakter Ini"
+              >
+                <Mic className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Naskah Voice-over</span>
+              </button>
+            )}
+
+            {onOpenSocialMeta && (
               <button
                 id="btn-open-social-meta-card"
                 onClick={onOpenSocialMeta}
@@ -121,10 +151,10 @@ export const IdentitySummaryCard: React.FC<IdentitySummaryCardProps> = ({
                 title="Lihat Pratinjau Kartu Berbagi Media Sosial & Open Graph Meta Tags"
               >
                 <Share2 className="h-3.5 w-3.5 text-purple-400" />
-                <span>Pratinjau Kartu Medsos</span>
+                <span>Pratinjau Medsos</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Demographics & Metadata Matrix */}

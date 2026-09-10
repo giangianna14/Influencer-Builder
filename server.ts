@@ -1197,6 +1197,302 @@ Tuliskan HANYA hasil teks yang sudah dipoles secara langsung, tanpa pembuka atau
     }
   });
 
+  // 6. Transform Text Prompt into Voice-over Short Video Narration Script (Gemini 3.8 Flash)
+  app.post("/api/voiceover/generate", async (req, res) => {
+    try {
+      const {
+        promptText,
+        influencer,
+        targetDurationSec = 30,
+        platform = "TikTok",
+        voiceStyle = "Santai",
+        toneTier = "tier2",
+        language = "id",
+        customInstructions = "",
+      } = req.body;
+
+      if (!promptText || typeof promptText !== "string" || promptText.trim().length === 0) {
+        return res.status(400).json({ success: false, error: "Teks prompt atau ide konten wajib diisi." });
+      }
+
+      const effectiveToneTier = (toneTier || influencer?.toneTier || "tier2") as "tier1" | "tier2" | "tier3";
+      const durationSec = Number(targetDurationSec) === 15 ? 15 : Number(targetDurationSec) === 60 ? 60 : 30;
+
+      const targetMinWords = durationSec === 15 ? 30 : durationSec === 60 ? 125 : 60;
+      const targetMaxWords = durationSec === 15 ? 45 : durationSec === 60 ? 165 : 85;
+
+      const ai = getGenAI();
+
+      const systemInstruction = `Anda adalah Sutradara Kreatif Video Pendek Viral & Naskah Penulis Voice-over (TikTok, Reels, YouTube Shorts) kelas dunia.
+Tugas Anda adalah mengubah ide prompt visual atau narasi menjadi skrip narasi suara (voice-over) yang siap dibacakan, terstruktur per adegan dengan timing detik, arahan ekspresi visual, dan hook awal yang menghentikan scroll.
+
+${ANTI_SLOP_DIRECTIVES}
+
+ATURAN STRUKTURAL SKRIP VOICE-OVER VIDEO PENDEK:
+1. HOOK 3 DETIK PERTAMA (00:00 - 00:03):
+   - Wajib menusuk rasa ingin tahu, kontras visual, atau pertanyaan tidak terduga.
+   - Dilarang keras sapaan klise seperti: "Halo guys", "Selamat datang kembali", "Di era serba cepat ini", "Pernahkah Anda membayangkan".
+2. KETEPATAN PACING DAN JUMLAH KATA:
+   - Durasi Target: ${durationSec} detik.
+   - Kecepatan bicara alami adalah 140 sampai 150 kata per menit (~2.3 kata per detik).
+   - Jumlah kata total WAJIB antara ${targetMinWords} sampai ${targetMaxWords} kata.
+3. STRUKTUR ADEGAN (SCENES):
+   - Buat tepat ${durationSec === 15 ? "2 sampai 3 adegan" : durationSec === 60 ? "5 sampai 7 adegan" : "3 sampai 4 adegan"}.
+   - Setiap adegan memiliki:
+     * sceneNumber: Angka urutan (1, 2, dst)
+     * timestamp: Rentang detik akurat ("00:00 - 00:03", "00:03 - 00:10", dst)
+     * durationSec: Durasi adegan dalam detik
+     * visualCue: Arahan kamera dan gerakan visual influencer yang sinkron dengan ucapan
+     * narrationText: Teks kalimat yang dibaca pengisi suara (bahasa tutur alami, bukan bahasa tulisan kaku)
+     * toneDelivery: Petunjuk nada suara (misal: "Antusias dengan senyuman", "Berbisik pelan penasaran", "Tegas meyakinkan")
+     * onScreenText: Subtitle ringkas / teks tempel di layar (3 sampai 5 kata kuat)
+4. TONE REGISTER:
+   - Nada Suara: ${voiceStyle}.
+   - Register Bahasa: ${
+     effectiveToneTier === "tier3"
+       ? "Tier 3 (Informal medsos santai, luwes, kata ganti aku/kamu, kontraksi wajar: nggak, udah, gimana, emang, aja)"
+       : effectiveToneTier === "tier1"
+       ? "Tier 1 (Formal elegan, berwibawa, tanpa kontraksi)"
+       : "Tier 2 (Semi-formal natural, komunikatif, hangat, standar kreator profesional)"
+   }.
+5. CALL TO ACTION AKHIR:
+   - Di detik-detik terakhir, berikan ajakan interaksi organik (bukan paksaan klise).
+6. KEBIJAKAN TANDA BACA & SLOP:
+   - NOL em dash ('—') dan NOL en dash ('–'). Ganti dengan titik, koma, titik dua, atau kurung.
+   - Dilarang kata klise: "menyelami", "ekosistem", "paradigma", "berperan penting", "memastikan".
+
+Output WAJIB berupa JSON valid dengan format persis berikut:
+{
+  "title": "Judul Skrip Video Pendek",
+  "hook3s": "Kalimat pembuka 0-3 detik pertama",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "timestamp": "00:00 - 00:03",
+      "durationSec": 3,
+      "visualCue": "Kamera zoom-in cepat ke tatapan mata influencer...",
+      "narrationText": "Satu hal yang jarang orang sadari soal gaya berpakaian:",
+      "toneDelivery": "Intonasi penasaran dan tatapan fokus",
+      "onScreenText": "Rahasia Gaya Paling Disembunyikan"
+    }
+  ],
+  "callToAction": "Komen di bawah caramu memilih outfit andalan!",
+  "soundtrackSuggestion": "Lo-fi beat 90 BPM atau audio tren upbeat dengan ketukan santai",
+  "audioPacingVibe": "140 WPM, tempo ritmis dengan artikulasi jelas",
+  "fullNarration": "Naskah lengkap gabungan seluruh narasi yang siap dibaca",
+  "totalWordCount": 72,
+  "estimatedReadingTimeSec": ${durationSec}
+}`;
+
+      const promptPayload = `Konversikan teks prompt berikut menjadi skrip narasi voice-over video pendek:
+PROMPT/KONSEP DASAR:
+"${promptText}"
+
+DATA INFLUENCER & KONTEN:
+- Platform: ${platform}
+- Target Durasi: ${durationSec} Detik
+- Gaya Suara: ${voiceStyle}
+- Nama Karakter: ${influencer?.name || "Virtual Influencer"} (${influencer?.handle || "@creator"})
+- Niche & Archetype: ${influencer?.niche || "Lifestyle & Fashion"} / ${influencer?.personalityProfile?.archetype || "Trendsetter"}
+- Tone of Voice: ${influencer?.personalityProfile?.toneOfVoice || "Natural & Engaging"}
+${customInstructions ? `- Instruksi Khusus: ${customInstructions}` : ""}
+
+Hasilkan struktur JSON sekarang:`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: promptPayload,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+
+      const rawText = response.text || "";
+      const scriptData = extractJSON(rawText);
+
+      if (!scriptData || !Array.isArray(scriptData.scenes) || scriptData.scenes.length === 0) {
+        throw new Error("Gagal membaca struktur skrip narasi dari Gemini.");
+      }
+
+      const cleanScript = sanitizeDeep(scriptData, effectiveToneTier);
+      const fullNarration = cleanScript.fullNarration || cleanScript.scenes.map((s: any) => s.narrationText).join(" ");
+      const wordsCount = fullNarration.split(/\s+/).filter(Boolean).length;
+      cleanScript.totalWordCount = wordsCount;
+      cleanScript.estimatedReadingTimeSec = Math.round((wordsCount / 140) * 60) || durationSec;
+
+      res.json({
+        success: true,
+        script: cleanScript,
+        platform,
+        targetDurationSec: durationSec,
+        toneTier: effectiveToneTier,
+        voiceStyle,
+      });
+    } catch (err: any) {
+      console.warn("Handled voiceover script generation fallback:", err?.message || err);
+      const {
+        promptText = "Inspirasi outfit dan rutinitas harian virtual creator",
+        influencer = {},
+        targetDurationSec = 30,
+        platform = "TikTok",
+        voiceStyle = "Santai",
+        toneTier = "tier2",
+      } = req.body;
+
+      const durationSec = Number(targetDurationSec) === 15 ? 15 : Number(targetDurationSec) === 60 ? 60 : 30;
+      const infName = influencer.name || "Virtual Creator";
+
+      let fallbackScenes = [];
+      if (durationSec === 15) {
+        fallbackScenes = [
+          {
+            sceneNumber: 1,
+            timestamp: "00:00 - 00:03",
+            durationSec: 3,
+            visualCue: `Close-up dinamis ${infName} menoleh ke kamera sambil merapikan pakaian.`,
+            narrationText: "Kalian pernah ngerasa outfit biasa aja tiba-tiba kelihatan mewah?",
+            toneDelivery: "Nada penasaran dan tersenyum hangat",
+            onScreenText: "Outfit Biasa Jadi Mewah?",
+          },
+          {
+            sceneNumber: 2,
+            timestamp: "00:03 - 00:11",
+            durationSec: 8,
+            visualCue: "Transisi kamera cepat menyoroti detail potongan kain, aksesoris minimalis, dan siluet rapi.",
+            narrationText: "Kuncinya bukan di harga, tapi di paduan warna netral dan potongan siluet yang pas di badan.",
+            toneDelivery: "Percaya diri dan komunikatif",
+            onScreenText: "Kuncinya Siluet & Warna Netral",
+          },
+          {
+            sceneNumber: 3,
+            timestamp: "00:11 - 00:15",
+            durationSec: 4,
+            visualCue: `${infName} melangkah santai sambil menatap kamera dan melambaikan tangan ringan.`,
+            narrationText: "Coba cek lemarimu sekarang, dan komen kombinasi favoritmu!",
+            toneDelivery: "Santai dan mengundang",
+            onScreenText: "Komen Warna Favoritmu!",
+          },
+        ];
+      } else if (durationSec === 60) {
+        fallbackScenes = [
+          {
+            sceneNumber: 1,
+            timestamp: "00:00 - 00:05",
+            durationSec: 5,
+            visualCue: `Sudut pandang sinematik 35mm ${infName} di ruang studio minimalis dengan pencahayaan golden hour.`,
+            narrationText: "Banyak orang mikir bikin konten berkualitas itu butuh studio mahal dan kamera bioskop.",
+            toneDelivery: "Nada santai membuka obrolan langsung",
+            onScreenText: "Mitos Bikin Konten Berkualitas",
+          },
+          {
+            sceneNumber: 2,
+            timestamp: "00:05 - 00:18",
+            durationSec: 13,
+            visualCue: "Kamera beralih ke layar kerja, menunjukkan storyboard dan catatan konsep naskah.",
+            narrationText: "Kenyataannya, fondasi paling penting ada pada kejelasan pesan dan sudut pandang autentik yang kamu bawakan ke audiens.",
+            toneDelivery: "Reflektif dan meyakinkan",
+            onScreenText: "Pesan Jelas > Alat Mahal",
+          },
+          {
+            sceneNumber: 3,
+            timestamp: "00:18 - 00:32",
+            durationSec: 14,
+            visualCue: `${infName} menunjukkan perbandingan dua tangkapan visual, satu terlalu ramai dan satu terfokus rapi.`,
+            narrationText: "Visual yang terarah bikin orang berhenti scrolling. Jangan penuhi layar dengan terlalu banyak elemen yang mengganggu fokus.",
+            toneDelivery: "Memberikan arahan praktis",
+            onScreenText: "Fokus Pada Satu Pesan Kuat",
+          },
+          {
+            sceneNumber: 4,
+            timestamp: "00:32 - 00:46",
+            durationSec: 14,
+            visualCue: "Tampilan candid influencer duduk rileks menikmati kopi sambil berdiskusi santai.",
+            narrationText: "Saat narasi suaramu mengalir seperti ngobrol langsung di depan teman, penonton bakal betah menyimak sampai detik terakhir.",
+            toneDelivery: "Hangat dan intim",
+            onScreenText: "Bicara Seperti ke Teman Baik",
+          },
+          {
+            sceneNumber: 5,
+            timestamp: "00:46 - 00:60",
+            durationSec: 14,
+            visualCue: `${infName} tersenyum menatap kamera, teks interaktif muncul di sisi kanan layar.`,
+            narrationText: "Langkah kecil apa yang mau kamu mulai hari ini? Tulis rencana kontenmu di kolom komentar ya!",
+            toneDelivery: "Penuh dorongan positif",
+            onScreenText: "Tulis Rencana Kontenmu!",
+          },
+        ];
+      } else {
+        // 30 seconds default
+        fallbackScenes = [
+          {
+            sceneNumber: 1,
+            timestamp: "00:00 - 00:04",
+            durationSec: 4,
+            visualCue: `Transisi cepat ke potret ${infName} menatap kamera dengan senyum percaya diri.`,
+            narrationText: "Kenapa sebagian konten bisa langsung nempel di ingatan orang cuma dalam tiga detik?",
+            toneDelivery: "Penasaran dan bertenaga",
+            onScreenText: "Kenapa Konten Ini Nempel?",
+          },
+          {
+            sceneNumber: 2,
+            timestamp: "00:04 - 00:14",
+            durationSec: 10,
+            visualCue: "Cuplikan adegan berganti menunjukkan gestur dinamis dan pencahayaan studio terarah.",
+            narrationText: "Jawabannya ada di ritme bicara dan keselarasan visual yang langsung to the point tanpa basa-basi pengantar.",
+            toneDelivery: "Jelas dan artikulatif",
+            onScreenText: "To The Point Tanpa Basa-Basi",
+          },
+          {
+            sceneNumber: 3,
+            timestamp: "00:14 - 00:23",
+            durationSec: 9,
+            visualCue: `${infName} memegang secangkir kopi keramik, latar belakang cafe estetik dan natural.`,
+            narrationText: "Saat kamu menyajikan nilai konkret dengan gaya tutur yang santai, audiens bakal merasa terhubung secara alami.",
+            toneDelivery: "Hangat dan ramah",
+            onScreenText: "Nilai Nyata + Bahasa Tutur Santai",
+          },
+          {
+            sceneNumber: 4,
+            timestamp: "00:23 - 00:30",
+            durationSec: 7,
+            visualCue: `${infName} mengarahkan telunjuk ke area tombol follow dan komentar di antarmuka ponsel.`,
+            narrationText: "Simpan video ini buat latihan naskahmu nanti, dan bagikan ke teman kreatormu!",
+            toneDelivery: "Menutup dengan riang",
+            onScreenText: "Simpan & Bagikan ke Teman!",
+          },
+        ];
+      }
+
+      const fullNarr = fallbackScenes.map((s) => s.narrationText).join(" ");
+      const wordsCount = fullNarr.split(/\s+/).filter(Boolean).length;
+
+      const fallbackScript = {
+        title: `Naskah Narasi Voice-over: ${promptText.slice(0, 40)}`,
+        hook3s: fallbackScenes[0].narrationText,
+        scenes: fallbackScenes,
+        callToAction: fallbackScenes[fallbackScenes.length - 1].narrationText,
+        soundtrackSuggestion: "Chill electronic lo-fi 95 BPM dengan ketukan perkusi lembut",
+        audioPacingVibe: "140 WPM, artikulasi santai dan ritme mengalir",
+        fullNarration: fullNarr,
+        totalWordCount: wordsCount,
+        estimatedReadingTimeSec: durationSec,
+      };
+
+      const cleanFallback = sanitizeDeep(fallbackScript, toneTier as any);
+
+      res.json({
+        success: true,
+        script: cleanFallback,
+        platform,
+        targetDurationSec: durationSec,
+        toneTier,
+        voiceStyle,
+      });
+    }
+  });
+
+
   // Vite development middleware vs production static handling
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
